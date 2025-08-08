@@ -1,8 +1,4 @@
 
-````markdown
-# Meter Manager API
-
-## Setup
 
 1. Install dependencies:
 ```bash
@@ -55,7 +51,4 @@ npx sequelize-cli db:migrate
 
 ```bash
 npx sequelize-cli db:migrate:undo
-```
-
-```
 ```

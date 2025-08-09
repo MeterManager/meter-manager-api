@@ -4,7 +4,6 @@ module.exports = (sequelize, DataTypes) => {
   class Meter extends Model {
     static associate(models) {
       this.belongsTo(models.Location, { foreignKey: 'location_id' });
-      this.belongsTo(models.Tenant, { foreignKey: 'tenant_id' });
       this.belongsTo(models.EnergyResourceType, { foreignKey: 'energy_resource_type_id' });
       this.hasMany(models.MeterTenant, { foreignKey: 'meter_id' });
     }

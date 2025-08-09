@@ -10,13 +10,13 @@ npm install
 3. Start the server:
 
 ```bash
-npx nodemon index.js
+npx nodemon server.js
 ```
 
 or
 
 ```bash
-node index.js
+node server.js
 ```
 
 ## Scripts

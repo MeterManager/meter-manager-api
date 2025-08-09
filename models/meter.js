@@ -12,7 +12,6 @@ module.exports = (sequelize, DataTypes) => {
     {
       serial_number: { type: DataTypes.STRING(100), allowNull: false },
       location_id: { type: DataTypes.INTEGER, allowNull: false },
-      tenant_id: { type: DataTypes.INTEGER, allowNull: true },
       energy_resource_type_id: { type: DataTypes.INTEGER, allowNull: false },
       is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
       created_at: { type: DataTypes.DATE, defaultValue: sequelize.literal('CURRENT_TIMESTAMP') },

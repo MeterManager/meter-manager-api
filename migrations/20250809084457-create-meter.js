@@ -12,13 +12,6 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'RESTRICT',
       },
-      tenant_id: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-        references: { model: 'tenants', key: 'id' },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL',
-      },
       energy_resource_type_id: {
         type: Sequelize.INTEGER,
         allowNull: false,

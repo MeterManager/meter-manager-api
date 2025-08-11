@@ -1,12 +1,32 @@
 require('dotenv').config();
 
 const express = require('express');
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocs = require('./config/swagger');
+const routes = require('./src/routes/index');
 const db = require('./models');
+const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const allowedOrigins = process.env.CORS_ORIGINS 
+  ? process.env.CORS_ORIGINS.split(',')
+  : [
+      `http://localhost:${PORT}`,
+    ];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+}));
+
 app.use(express.json());
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.use('/api', routes);
 
 async function testDbConnection() {
   try {
@@ -18,6 +38,9 @@ async function testDbConnection() {
 }
 
 app.listen(PORT, async () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Swagger docs: http://localhost:${PORT}/api-docs`);
   await testDbConnection();
 });
+
+module.exports = app;

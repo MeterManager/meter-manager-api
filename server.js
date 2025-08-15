@@ -10,16 +10,6 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-<<<<<<< HEAD
-const allowedOrigins = process.env.CORS_ORIGINS 
-  ? process.env.CORS_ORIGINS.split(',')
-  : [
-      `http://localhost:${PORT}`,
-    ];
-
-app.use(cors({
-  origin: allowedOrigins,
-=======
 const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
   : [];
@@ -31,7 +21,6 @@ app.use(cors({
     }
     return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
->>>>>>> 944d7d2fd1f02a1ee936fdc836ec9a5a3350b36e
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept']

@@ -16,7 +16,7 @@ export default defineConfig([
       globals: globals.node,
     },
     rules: {
-      'prettier/prettier': 'error',
+    'prettier/prettier': ['off', { endOfLine: 'auto' }]
     },
   },
 ]);

@@ -69,9 +69,9 @@ class LocationService {
     if (location.is_active) {
       throw new Error('Cannot delete active location. Deactivate it first.');
     }
-    
+
     return await location.destroy();
-}
+  }
 }
 
 module.exports = new LocationService();

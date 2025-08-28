@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const resourceTypeController = require('../controllers/resourceTypeController');
-const { 
+const {
   createResourceTypeValidation,
   updateResourceTypeValidation,
   getResourceTypeByIdValidation,
   getResourceTypesQueryValidation,
-  handleValidationErrors
+  handleValidationErrors,
 } = require('../middlewares/resourceTypeValidation');
 
 /**
@@ -46,11 +46,7 @@ const {
  *       200:
  *         description: Success
  */
-router.get('/',
-  getResourceTypesQueryValidation,
-  handleValidationErrors,
-  resourceTypeController.getAllResourceTypes
-);
+router.get('/', getResourceTypesQueryValidation, handleValidationErrors, resourceTypeController.getAllResourceTypes);
 
 /**
  * @swagger
@@ -69,11 +65,7 @@ router.get('/',
  *       404:
  *         description: Not found
  */
-router.get('/:id',
-  getResourceTypeByIdValidation,
-  handleValidationErrors,
-  resourceTypeController.getResourceTypeById
-);
+router.get('/:id', getResourceTypeByIdValidation, handleValidationErrors, resourceTypeController.getResourceTypeById);
 
 /**
  * @swagger
@@ -102,11 +94,7 @@ router.get('/:id',
  *       409:
  *         description: Resource type already exists
  */
-router.post('/',
-  createResourceTypeValidation,
-  handleValidationErrors,
-  resourceTypeController.createResourceType
-);
+router.post('/', createResourceTypeValidation, handleValidationErrors, resourceTypeController.createResourceType);
 
 /**
  * @swagger
@@ -140,11 +128,7 @@ router.post('/',
  *       409:
  *         description: Resource type already exists
  */
-router.put('/:id',
-  updateResourceTypeValidation,
-  handleValidationErrors,
-  resourceTypeController.updateResourceType
-);
+router.put('/:id', updateResourceTypeValidation, handleValidationErrors, resourceTypeController.updateResourceType);
 
 /**
  * @swagger
@@ -167,11 +151,6 @@ router.put('/:id',
  *       404:
  *         description: Resource type not found
  */
-router.delete('/:id',
-  getResourceTypeByIdValidation,
-  handleValidationErrors,
-  resourceTypeController.deleteResourceType
-);
+router.delete('/:id', getResourceTypeByIdValidation, handleValidationErrors, resourceTypeController.deleteResourceType);
 
 module.exports = router;
-

@@ -1,9 +1,8 @@
-
-
 1. Install dependencies:
+
 ```bash
 npm install
-````
+```
 
 2. Create a `.env` file with your environment variables.
 
@@ -21,19 +20,19 @@ node server.js
 
 ## Scripts
 
-* Lint:
+- Lint:
 
 ```bash
 npm run lint
 ```
 
-* Fix lint issues:
+- Fix lint issues:
 
 ```bash
 npm run lint:fix
 ```
 
-* Format code:
+- Format code:
 
 ```bash
 npm run format
@@ -41,13 +40,13 @@ npm run format
 
 ## Database migrations (Sequelize CLI)
 
-* Run migrations:
+- Run migrations:
 
 ```bash
 npx sequelize-cli db:migrate
 ```
 
-* Undo last migration:
+- Undo last migration:
 
 ```bash
 npx sequelize-cli db:migrate:undo

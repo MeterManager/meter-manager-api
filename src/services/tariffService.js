@@ -1,0 +1,125 @@
+const { Tariff, Location, EnergyResourceType } = require('../../models');
+const { Op } = require('sequelize');
+
+class TariffService {
+  async getAllTariffs(filters = {}) {
+    const where = {};
+
+    if (filters.location_id) {
+      where.location_id = filters.location_id;
+    }
+
+    if (filters.energy_resource_type_id) {
+      where.energy_resource_type_id = filters.energy_resource_type_id;
+    }
+
+    if (filters.valid_from) {
+      where.valid_from = { [Op.gte]: filters.valid_from };
+    }
+
+    if (filters.valid_to) {
+      where[Op.or] = [
+        { valid_to: { [Op.lte]: filters.valid_to } },
+        { valid_to: null }, 
+      ];
+    }
+
+    return await Tariff.findAll({
+      where,
+      include: [
+        { model: Location, attributes: ['id', 'name'] },
+        { model: EnergyResourceType, attributes: ['id', 'name', 'unit'] },
+      ],
+      order: [['valid_from', 'DESC']],
+    });
+  }
+
+  async getTariffById(id) {
+    const tariff = await Tariff.findByPk(id, {
+      include: [
+        { model: Location, attributes: ['id', 'name'] },
+        { model: EnergyResourceType, attributes: ['id', 'name', 'unit'] },
+      ],
+    });
+    if (!tariff) {
+      throw new Error('Tariff not found');
+    }
+    return tariff;
+  }
+
+  async createTariff(data) {
+    const { location_id, energy_resource_type_id, price, valid_from, valid_to } = data;
+
+    if (!location_id || !energy_resource_type_id || !price || !valid_from) {
+      throw new Error('Location, energy resource type, price and valid_from are required');
+    }
+
+    const overlappingTariff = await Tariff.findOne({
+      where: {
+        location_id,
+        energy_resource_type_id,
+        [Op.or]: [
+          {
+            valid_from: { [Op.lte]: valid_to || new Date('9999-12-31') },
+            valid_to: { [Op.gte]: valid_from },
+          },
+          { valid_to: null },
+        ],
+      },
+    });
+
+    if (overlappingTariff) {
+      throw new Error('Overlapping tariff period exists for this resource and location');
+    }
+
+    return await Tariff.create({
+      location_id,
+      energy_resource_type_id,
+      price,
+      valid_from,
+      valid_to,
+    });
+  }
+
+  async updateTariff(id, updateData) {
+    const tariff = await this.getTariffById(id);
+
+    const { location_id, energy_resource_type_id, price, valid_from, valid_to } = updateData;
+
+    if (valid_from || valid_to) {
+      const overlappingTariff = await Tariff.findOne({
+        where: {
+          id: { [Op.ne]: id },
+          location_id: location_id || tariff.location_id,
+          energy_resource_type_id: energy_resource_type_id || tariff.energy_resource_type_id,
+          [Op.or]: [
+            {
+              valid_from: { [Op.lte]: valid_to || new Date('9999-12-31') },
+              valid_to: { [Op.gte]: valid_from || tariff.valid_from },
+            },
+            { valid_to: null },
+          ],
+        },
+      });
+
+      if (overlappingTariff) {
+        throw new Error('Updated period overlaps with existing tariff');
+      }
+    }
+
+    return await tariff.update({
+      ...(location_id && { location_id }),
+      ...(energy_resource_type_id && { energy_resource_type_id }),
+      ...(price !== undefined && { price }),
+      ...(valid_from && { valid_from }),
+      ...(valid_to !== undefined && { valid_to }),
+    });
+  }
+
+  async deleteTariff(id) {
+    const tariff = await this.getTariffById(id);
+    return await tariff.destroy();
+  }
+}
+
+module.exports = new TariffService();

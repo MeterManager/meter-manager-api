@@ -5,8 +5,8 @@ const getAllResourceDeliveries = async (req, res) => {
     const deliveries = await resourceDeliveryService.getAllDeliveries(req.query);
     res.json({
       success: true,
-      data: deliveries,
-      count: deliveries.length,
+      data: deliveries.data,
+      count: deliveries.count,
     });
   } catch (error) {
     res.status(500).json({
@@ -16,6 +16,7 @@ const getAllResourceDeliveries = async (req, res) => {
     });
   }
 };
+
 
 const getResourceDeliveryById = async (req, res) => {
   try {

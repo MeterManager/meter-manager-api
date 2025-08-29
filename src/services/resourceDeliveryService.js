@@ -1,4 +1,4 @@
-const { ResourceDelivery } = require('../../models');
+const { ResourceDelivery, ResourceConfiguration, Location } = require('../../models');
 const { Op } = require('sequelize');
 
 class ResourceDeliveryService {
@@ -17,18 +17,35 @@ class ResourceDeliveryService {
       where.delivery_date = filters.delivery_date;
     }
 
-    return await ResourceDelivery.findAll({
+    const limit = parseInt(filters.limit) || 10;
+    const page = parseInt(filters.page) || 1;
+
+    const result = await ResourceDelivery.findAndCountAll({
       where,
-      include: [{ model: Location }, { model: ResourceConfiguration }],
+      include: [
+        { model: Location, as: 'location' },
+        { model: ResourceConfiguration, as: 'resourceConfiguration' },
+      ],
       order: [['delivery_date', 'DESC']],
+      limit,
+      offset: (page - 1) * limit,
     });
+    
+    return {
+      data: result.rows,
+      count: result.count,
+    };
   }
 
   async getDeliveryById(id) {
     return await ResourceDelivery.findByPk(id, {
-      include: [{ model: Location }, { model: ResourceConfiguration }],
+      include: [
+        { model: Location, as: 'location' },
+        { model: ResourceConfiguration, as: 'resourceConfiguration' },
+      ],
     });
   }
+
 
   async createResourceDelivery(data) {
     const { location_id, resource_type, delivery_date, quantity, unit, price_per_unit, total_cost, supplier } = data;

@@ -11,10 +11,10 @@ const swaggerOptions = {
     servers: [
       {
         url: `http://localhost:${PORT}`,
-      }
-    ]
+      },
+    ],
   },
-  apis: ['./src/routes/*.js']
+  apis: ['./src/routes/*.js'],
 };
 
 const swaggerDocs = swaggerJSDoc(swaggerOptions);

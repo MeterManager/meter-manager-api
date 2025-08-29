@@ -3,8 +3,8 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class ResourceDelivery extends Model {
     static associate(models) {
-      this.belongsTo(models.Location, { foreignKey: 'location_id' });
-      this.belongsTo(models.ResourceConfiguration, { foreignKey: 'resource_type', targetKey: 'resource_type' });
+      this.belongsTo(models.Location, { foreignKey: 'location_id', as: 'location' });
+      this.belongsTo(models.ResourceConfiguration, { foreignKey: 'resource_type', targetKey: 'resource_type', as: 'resourceConfiguration' });
     }
   }
   ResourceDelivery.init(

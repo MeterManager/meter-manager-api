@@ -15,16 +15,11 @@ const createResourceTypeValidation = [
     .isLength({ min: 1, max: 50 })
     .withMessage('Unit must be between 1 and 50 characters'),
 
-  body('is_active')
-    .optional()
-    .isBoolean()
-    .withMessage('is_active must be a boolean value')
+  body('is_active').optional().isBoolean().withMessage('is_active must be a boolean value'),
 ];
 
 const updateResourceTypeValidation = [
-  param('id')
-    .isInt({ min: 1 })
-    .withMessage('Resource Type ID must be a positive integer'),
+  param('id').isInt({ min: 1 }).withMessage('Resource Type ID must be a positive integer'),
 
   body('name')
     .optional()
@@ -42,29 +37,21 @@ const updateResourceTypeValidation = [
     .isLength({ min: 1, max: 50 })
     .withMessage('Unit must be between 1 and 50 characters'),
 
-  body('is_active')
-    .optional()
-    .isBoolean()
-    .withMessage('is_active must be a boolean value')
+  body('is_active').optional().isBoolean().withMessage('is_active must be a boolean value'),
 ];
 
 const getResourceTypeByIdValidation = [
-  param('id')
-    .isInt({ min: 1 })
-    .withMessage('Resource Type ID must be a positive integer')
+  param('id').isInt({ min: 1 }).withMessage('Resource Type ID must be a positive integer'),
 ];
 
 const getResourceTypesQueryValidation = [
-  query('is_active')
-    .optional()
-    .isBoolean()
-    .withMessage('is_active must be a boolean value'),
+  query('is_active').optional().isBoolean().withMessage('is_active must be a boolean value'),
 
   query('name')
     .optional()
     .trim()
     .isLength({ min: 1, max: 255 })
-    .withMessage('Name filter must be between 1 and 255 characters')
+    .withMessage('Name filter must be between 1 and 255 characters'),
 ];
 
 const handleValidationErrors = (req, res, next) => {
@@ -73,7 +60,7 @@ const handleValidationErrors = (req, res, next) => {
     return res.status(400).json({
       success: false,
       message: 'Validation failed',
-      errors: errors.array()
+      errors: errors.array(),
     });
   }
   next();
@@ -84,5 +71,5 @@ module.exports = {
   updateResourceTypeValidation,
   getResourceTypeByIdValidation,
   getResourceTypesQueryValidation,
-  handleValidationErrors
+  handleValidationErrors,
 };

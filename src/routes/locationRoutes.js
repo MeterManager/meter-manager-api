@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const locationController = require('../controllers/locationController');
-const { 
+const {
   createLocationValidation,
   updateLocationValidation,
   getLocationByIdValidation,
   getLocationsQueryValidation,
-  handleValidationErrors 
+  handleValidationErrors,
 } = require('../middlewares/locationValidation');
 
 /**
@@ -35,11 +35,7 @@ const {
  *       200:
  *         description: Success
  */
-router.get('/',
-  getLocationsQueryValidation,
-  handleValidationErrors,
-  locationController.getAllLocations
-);
+router.get('/', getLocationsQueryValidation, handleValidationErrors, locationController.getAllLocations);
 
 /**
  * @swagger
@@ -58,11 +54,7 @@ router.get('/',
  *       404:
  *         description: Not found
  */
-router.get('/:id',
-  getLocationByIdValidation,
-  handleValidationErrors,
-  locationController.getLocationById
-);
+router.get('/:id', getLocationByIdValidation, handleValidationErrors, locationController.getLocationById);
 
 /**
  * @swagger
@@ -88,11 +80,7 @@ router.get('/:id',
  *       201:
  *         description: Created
  */
-router.post('/',
-  createLocationValidation,
-  handleValidationErrors,
-  locationController.createLocation
-);
+router.post('/', createLocationValidation, handleValidationErrors, locationController.createLocation);
 
 /**
  * @swagger
@@ -122,11 +110,7 @@ router.post('/',
  *       200:
  *         description: Updated
  */
-router.put('/:id',
-  updateLocationValidation,
-  handleValidationErrors,
-  locationController.updateLocation
-);
+router.put('/:id', updateLocationValidation, handleValidationErrors, locationController.updateLocation);
 
 /**
  * @swagger
@@ -149,10 +133,6 @@ router.put('/:id',
  *       404:
  *         description: Location not found
  */
-router.delete('/:id',
-  getLocationByIdValidation,
-  handleValidationErrors,
-  locationController.deleteLocation
-);
+router.delete('/:id', getLocationByIdValidation, handleValidationErrors, locationController.deleteLocation);
 
 module.exports = router;

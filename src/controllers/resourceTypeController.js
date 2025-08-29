@@ -4,7 +4,7 @@ const getAllResourceTypes = async (req, res) => {
   try {
     const filters = {
       is_active: req.query.is_active,
-      name: req.query.name
+      name: req.query.name,
     };
 
     const types = await energyResourceTypeService.getAllResourceTypes(filters);
@@ -12,13 +12,13 @@ const getAllResourceTypes = async (req, res) => {
     res.json({
       success: true,
       data: types,
-      count: types.length
+      count: types.length,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch resource types',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -30,13 +30,13 @@ const getResourceTypeById = async (req, res) => {
 
     res.json({
       success: true,
-      data: type
+      data: type,
     });
   } catch (error) {
     const statusCode = error.message === 'Resource type not found' ? 404 : 500;
     res.status(statusCode).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -48,13 +48,13 @@ const createResourceType = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Resource type created successfully',
-      data: type
+      data: type,
     });
   } catch (error) {
     const statusCode = error.message.includes('already exists') ? 409 : 500;
     res.status(statusCode).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -67,7 +67,7 @@ const updateResourceType = async (req, res) => {
     res.json({
       success: true,
       message: 'Resource type updated successfully',
-      data: type
+      data: type,
     });
   } catch (error) {
     let statusCode = 500;
@@ -79,7 +79,7 @@ const updateResourceType = async (req, res) => {
 
     res.status(statusCode).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -91,19 +91,15 @@ const deleteResourceType = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Resource type deleted permanently'
+      message: 'Resource type deleted permanently',
     });
   } catch (error) {
     const statusCode =
-      error.message === 'Resource type not found'
-        ? 404
-        : error.message.includes('Cannot delete active')
-        ? 400
-        : 500;
+      error.message === 'Resource type not found' ? 404 : error.message.includes('Cannot delete active') ? 400 : 500;
 
     res.status(statusCode).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -113,5 +109,5 @@ module.exports = {
   getResourceTypeById,
   createResourceType,
   updateResourceType,
-  deleteResourceType
+  deleteResourceType,
 };

@@ -67,7 +67,8 @@ const updateTenant = async (req, res) => {
       data: tenant,
     });
   } catch (error) {
-    const statusCode = error.message === 'Tenant not found' ? 404 : error.message.includes('already exists') ? 409 : 500;
+    const statusCode =
+      error.message === 'Tenant not found' ? 404 : error.message.includes('already exists') ? 409 : 500;
     res.status(statusCode).json({
       success: false,
       message: error.message,
@@ -84,7 +85,8 @@ const deleteTenant = async (req, res) => {
       message: 'Tenant deleted permanently',
     });
   } catch (error) {
-    const statusCode = error.message === 'Tenant not found' ? 404 : error.message === 'Cannot delete active tenant' ? 400 : 500;
+    const statusCode =
+      error.message === 'Tenant not found' ? 404 : error.message === 'Cannot delete active tenant' ? 400 : 500;
     res.status(statusCode).json({
       success: false,
       message: error.message,

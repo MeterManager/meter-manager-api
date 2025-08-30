@@ -30,7 +30,7 @@ class ResourceDeliveryService {
       limit,
       offset: (page - 1) * limit,
     });
-    
+
     return {
       data: result.rows,
       count: result.count,
@@ -45,7 +45,6 @@ class ResourceDeliveryService {
       ],
     });
   }
-
 
   async createResourceDelivery(data) {
     const { location_id, resource_type, delivery_date, quantity, unit, price_per_unit, total_cost, supplier } = data;

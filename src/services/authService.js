@@ -9,7 +9,8 @@ class AuthService {
       const auth0UserId = payload.sub;
 
       const email = payload['https://energy-api.local/email'] || '';
-      const fullNameFromEmail = payload['https://energy-api.local/full_name'] || (email ? email.split('@')[0] : 'Unknown User');
+      const fullNameFromEmail =
+        payload['https://energy-api.local/full_name'] || (email ? email.split('@')[0] : 'Unknown User');
 
       let user = await User.findOne({ where: { auth0_user_id: auth0UserId } });
       console.log('Existing user from DB:', user?.toJSON?.() || null);

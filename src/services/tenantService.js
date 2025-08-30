@@ -1,4 +1,4 @@
-const { Tenant, MeterTenant } = require('../../models');
+const { Tenant, MeterTenant, Location } = require('../../models');
 const { Op } = require('sequelize');
 
 class TenantService {
@@ -29,6 +29,12 @@ class TenantService {
     const existingTenant = await Tenant.findOne({ where: { name } });
     if (existingTenant) throw new Error('Tenant with this name already exists');
 
+    if (location_id) {
+      const location = await Location.findByPk(location_id);
+      if (!location) throw new Error('Location not found');
+      if (!location.is_active) throw new Error('Cannot create tenant with inactive location');
+    }
+
     return await Tenant.create({
       name,
       location_id,
@@ -49,6 +55,12 @@ class TenantService {
         where: { name, id: { [Op.ne]: id } },
       });
       if (existingTenant) throw new Error('Tenant with this name already exists');
+    }
+
+    if (location_id && location_id !== tenant.location_id) {
+      const location = await Location.findByPk(location_id);
+      if (!location) throw new Error('Location not found');
+      if (!location.is_active) throw new Error('Cannot update tenant with inactive location');
     }
 
     return await tenant.update({

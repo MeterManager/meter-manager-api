@@ -1,13 +1,9 @@
 const { body, param, query, validationResult } = require('express-validator');
 
 const createTariffValidation = [
-  body('location_id')
-    .isInt({ min: 1 })
-    .withMessage('Location ID must be a positive integer'),
+  body('location_id').isInt({ min: 1 }).withMessage('Location ID must be a positive integer'),
 
-  body('energy_resource_type_id')
-    .isInt({ min: 1 })
-    .withMessage('Energy Resource Type ID must be a positive integer'),
+  body('energy_resource_type_id').isInt({ min: 1 }).withMessage('Energy Resource Type ID must be a positive integer'),
 
   body('price')
     .isDecimal({ decimal_digits: '1,4' })
@@ -24,14 +20,9 @@ const createTariffValidation = [
 ];
 
 const updateTariffValidation = [
-  param('id')
-    .isInt({ min: 1 })
-    .withMessage('Tariff ID must be a positive integer'),
+  param('id').isInt({ min: 1 }).withMessage('Tariff ID must be a positive integer'),
 
-  body('location_id')
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage('Location ID must be a positive integer'),
+  body('location_id').optional().isInt({ min: 1 }).withMessage('Location ID must be a positive integer'),
 
   body('energy_resource_type_id')
     .optional()
@@ -54,17 +45,10 @@ const updateTariffValidation = [
     .withMessage('valid_to must be a valid date in YYYY-MM-DD format'),
 ];
 
-const getTariffByIdValidation = [
-  param('id')
-    .isInt({ min: 1 })
-    .withMessage('Tariff ID must be a positive integer'),
-];
+const getTariffByIdValidation = [param('id').isInt({ min: 1 }).withMessage('Tariff ID must be a positive integer')];
 
 const getTariffsQueryValidation = [
-  query('location_id')
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage('Location ID must be a positive integer'),
+  query('location_id').optional().isInt({ min: 1 }).withMessage('Location ID must be a positive integer'),
 
   query('energy_resource_type_id')
     .optional()

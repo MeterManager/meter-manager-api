@@ -8,6 +8,7 @@ const {
   getResourceDeliveriesQueryValidation,
   handleValidationErrors,
 } = require('../middlewares/resourceDeliveryValidation');
+const { checkJwt, checkRole } = require('../middlewares/authMiddleware');
 
 /**
  * @swagger
@@ -62,6 +63,7 @@ const {
  */
 router.get(
   '/',
+  checkJwt,
   getResourceDeliveriesQueryValidation,
   handleValidationErrors,
   resourceDeliveryController.getAllResourceDeliveries
@@ -86,6 +88,7 @@ router.get(
  */
 router.get(
   '/:id',
+  checkJwt,
   getDeleteResourceDeliveryByIdValidation,
   handleValidationErrors,
   resourceDeliveryController.getResourceDeliveryById
@@ -108,6 +111,8 @@ router.get(
  */
 router.post(
   '/',
+  checkJwt,
+  checkRole('admin'),
   createResourceDeliveryValidation,
   handleValidationErrors,
   resourceDeliveryController.createResourceDelivery
@@ -138,6 +143,8 @@ router.post(
  */
 router.put(
   '/:id',
+  checkJwt,
+  checkRole('admin'),
   updateResourceDeliveryValidation,
   handleValidationErrors,
   resourceDeliveryController.updateResourceDelivery
@@ -162,6 +169,8 @@ router.put(
  */
 router.delete(
   '/:id',
+  checkJwt,
+  checkRole('admin'),
   getDeleteResourceDeliveryByIdValidation,
   handleValidationErrors,
   resourceDeliveryController.deleteResourceDelivery

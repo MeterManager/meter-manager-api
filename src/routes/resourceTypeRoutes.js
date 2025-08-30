@@ -8,6 +8,7 @@ const {
   getResourceTypesQueryValidation,
   handleValidationErrors,
 } = require('../middlewares/resourceTypeValidation');
+const { checkJwt, checkRole } = require('../middlewares/authMiddleware');
 
 /**
  * @swagger
@@ -46,7 +47,13 @@ const {
  *       200:
  *         description: Success
  */
-router.get('/', getResourceTypesQueryValidation, handleValidationErrors, resourceTypeController.getAllResourceTypes);
+router.get(
+  '/',
+  checkJwt,
+  getResourceTypesQueryValidation,
+  handleValidationErrors,
+  resourceTypeController.getAllResourceTypes
+);
 
 /**
  * @swagger
@@ -65,7 +72,13 @@ router.get('/', getResourceTypesQueryValidation, handleValidationErrors, resourc
  *       404:
  *         description: Not found
  */
-router.get('/:id', getResourceTypeByIdValidation, handleValidationErrors, resourceTypeController.getResourceTypeById);
+router.get(
+  '/:id',
+  checkJwt,
+  getResourceTypeByIdValidation,
+  handleValidationErrors,
+  resourceTypeController.getResourceTypeById
+);
 
 /**
  * @swagger
@@ -94,7 +107,14 @@ router.get('/:id', getResourceTypeByIdValidation, handleValidationErrors, resour
  *       409:
  *         description: Resource type already exists
  */
-router.post('/', createResourceTypeValidation, handleValidationErrors, resourceTypeController.createResourceType);
+router.post(
+  '/',
+  checkJwt,
+  checkRole('admin'),
+  createResourceTypeValidation,
+  handleValidationErrors,
+  resourceTypeController.createResourceType
+);
 
 /**
  * @swagger
@@ -128,7 +148,14 @@ router.post('/', createResourceTypeValidation, handleValidationErrors, resourceT
  *       409:
  *         description: Resource type already exists
  */
-router.put('/:id', updateResourceTypeValidation, handleValidationErrors, resourceTypeController.updateResourceType);
+router.put(
+  '/:id',
+  checkJwt,
+  checkRole('admin'),
+  updateResourceTypeValidation,
+  handleValidationErrors,
+  resourceTypeController.updateResourceType
+);
 
 /**
  * @swagger
@@ -151,6 +178,13 @@ router.put('/:id', updateResourceTypeValidation, handleValidationErrors, resourc
  *       404:
  *         description: Resource type not found
  */
-router.delete('/:id', getResourceTypeByIdValidation, handleValidationErrors, resourceTypeController.deleteResourceType);
+router.delete(
+  '/:id',
+  checkJwt,
+  checkRole('admin'),
+  getResourceTypeByIdValidation,
+  handleValidationErrors,
+  resourceTypeController.deleteResourceType
+);
 
 module.exports = router;

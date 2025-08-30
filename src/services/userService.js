@@ -31,7 +31,6 @@ class UserService {
     return user;
   }
 
-
   async updateUser(id, updateData) {
     const user = await this.getUserById(id);
 

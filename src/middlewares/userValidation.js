@@ -1,47 +1,23 @@
 const { body, param, query, validationResult } = require('express-validator');
 
 const updateUserValidation = [
-  param('id')
-    .isInt({ min: 1 })
-    .withMessage('User ID must be a positive integer'),
+  param('id').isInt({ min: 1 }).withMessage('User ID must be a positive integer'),
 
-  body('full_name')
-    .optional()
-    .isString()
-    .withMessage('Full name must be a string'),
+  body('full_name').optional().isString().withMessage('Full name must be a string'),
 
-  body('role')
-    .optional()
-    .isIn(['admin', 'manager', 'user'])
-    .withMessage('Role must be one of: admin, manager, user'),
+  body('role').optional().isIn(['admin', 'manager', 'user']).withMessage('Role must be one of: admin, manager, user'),
 
-  body('is_active')
-    .optional()
-    .isBoolean()
-    .withMessage('is_active must be a boolean'),
+  body('is_active').optional().isBoolean().withMessage('is_active must be a boolean'),
 ];
 
-const getUserByIdValidation = [
-  param('id')
-    .isInt({ min: 1 })
-    .withMessage('User ID must be a positive integer'),
-];
+const getUserByIdValidation = [param('id').isInt({ min: 1 }).withMessage('User ID must be a positive integer')];
 
 const getUsersQueryValidation = [
-  query('full_name')
-    .optional()
-    .isString()
-    .withMessage('Full name must be a string'),
+  query('full_name').optional().isString().withMessage('Full name must be a string'),
 
-  query('role')
-    .optional()
-    .isIn(['admin', 'manager', 'user'])
-    .withMessage('Role must be one of: admin, manager, user'),
+  query('role').optional().isIn(['admin', 'manager', 'user']).withMessage('Role must be one of: admin, manager, user'),
 
-  query('is_active')
-    .optional()
-    .isBoolean()
-    .withMessage('is_active must be a boolean'),
+  query('is_active').optional().isBoolean().withMessage('is_active must be a boolean'),
 ];
 
 const handleValidationErrors = (req, res, next) => {

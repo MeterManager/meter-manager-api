@@ -17,7 +17,6 @@ const getAllResourceDeliveries = async (req, res) => {
   }
 };
 
-
 const getResourceDeliveryById = async (req, res) => {
   try {
     const { id } = req.params;

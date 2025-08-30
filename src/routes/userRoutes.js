@@ -5,8 +5,9 @@ const {
   updateUserValidation,
   getUserByIdValidation,
   getUsersQueryValidation,
-  handleValidationErrors
+  handleValidationErrors,
 } = require('../middlewares/userValidation');
+const { checkJwt, checkRole } = require('../middlewares/authMiddleware');
 
 /**
  * @swagger
@@ -57,7 +58,10 @@ const {
  *       200:
  *         description: Success
  */
-router.get('/',
+router.get(
+  '/',
+  checkJwt,
+  checkRole('admin'),
   getUsersQueryValidation,
   handleValidationErrors,
   userController.getAllUsers
@@ -80,7 +84,10 @@ router.get('/',
  *       404:
  *         description: User not found
  */
-router.get('/:id',
+router.get(
+  '/:id',
+  checkJwt,
+  checkRole('admin'),
   getUserByIdValidation,
   handleValidationErrors,
   userController.getUserById
@@ -117,7 +124,10 @@ router.get('/:id',
  *       404:
  *         description: User not found
  */
-router.put('/:id',
+router.put(
+  '/:id',
+  checkJwt,
+  checkRole('admin'),
   updateUserValidation,
   handleValidationErrors,
   userController.updateUser
@@ -142,7 +152,10 @@ router.put('/:id',
  *       404:
  *         description: User not found
  */
-router.delete('/:id',
+router.delete(
+  '/:id',
+  checkJwt,
+  checkRole('admin'),
   getUserByIdValidation,
   handleValidationErrors,
   userController.deleteUser

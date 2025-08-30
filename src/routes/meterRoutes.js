@@ -1,38 +1,32 @@
 const express = require('express');
 const router = express.Router();
-const tariffController = require('../controllers/tariffController');
+const meterController = require('../controllers/meterController');
 const {
-  createTariffValidation,
-  updateTariffValidation,
-  getTariffByIdValidation,
-  getTariffsQueryValidation,
+  createMeterValidation,
+  updateMeterValidation,
+  getMeterByIdValidation,
+  getMetersQueryValidation,
   handleValidationErrors,
-} = require('../middlewares/tariffValidation');
+} = require('../middlewares/meterValidation');
 const { checkJwt, checkRole } = require('../middlewares/authMiddleware');
 
 /**
  * @swagger
  * components:
  *   schemas:
- *     Tariff:
+ *     Meter:
  *       type: object
  *       properties:
  *         id:
  *           type: integer
+ *         serial_number:
+ *           type: string
  *         location_id:
  *           type: integer
  *         energy_resource_type_id:
  *           type: integer
- *         price:
- *           type: number
- *           format: decimal
- *         valid_from:
- *           type: string
- *           format: date
- *         valid_to:
- *           type: string
- *           format: date
- *           nullable: true
+ *         is_active:
+ *           type: boolean
  *         created_at:
  *           type: string
  *           format: date-time
@@ -40,10 +34,20 @@ const { checkJwt, checkRole } = require('../middlewares/authMiddleware');
 
 /**
  * @swagger
- * /api/tariffs:
+ * /api/meters:
  *   get:
- *     tags: [Tariffs]
+ *     tags: [Meters]
  *     parameters:
+ *       - name: is_active
+ *         in: query
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active status
+ *       - name: serial_number
+ *         in: query
+ *         schema:
+ *           type: string
+ *         description: Filter by serial number (partial match)
  *       - name: location_id
  *         in: query
  *         schema:
@@ -54,29 +58,30 @@ const { checkJwt, checkRole } = require('../middlewares/authMiddleware');
  *         schema:
  *           type: integer
  *         description: Filter by energy resource type ID
- *       - name: valid_from
- *         in: query
- *         schema:
- *           type: string
- *           format: date
- *         description: Show tariffs valid from this date
- *       - name: valid_to
- *         in: query
- *         schema:
- *           type: string
- *           format: date
- *         description: Show tariffs valid until this date
  *     responses:
  *       200:
  *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Meter'
+ *                 count:
+ *                   type: integer
  */
-router.get('/', checkJwt, getTariffsQueryValidation, handleValidationErrors, tariffController.getAllTariffs);
+router.get('/', checkJwt, getMetersQueryValidation, handleValidationErrors, meterController.getAllMeters);
 
 /**
  * @swagger
- * /api/tariffs/{id}:
+ * /api/meters/{id}:
  *   get:
- *     tags: [Tariffs]
+ *     tags: [Meters]
  *     parameters:
  *       - name: id
  *         in: path
@@ -87,15 +92,15 @@ router.get('/', checkJwt, getTariffsQueryValidation, handleValidationErrors, tar
  *       200:
  *         description: Success
  *       404:
- *         description: Tariff not found
+ *         description: Meter not found
  */
-router.get('/:id', checkJwt, getTariffByIdValidation, handleValidationErrors, tariffController.getTariffById);
+router.get('/:id', checkJwt, getMeterByIdValidation, handleValidationErrors, meterController.getMeterById);
 
 /**
  * @swagger
- * /api/tariffs:
+ * /api/meters:
  *   post:
- *     tags: [Tariffs]
+ *     tags: [Meters]
  *     requestBody:
  *       required: true
  *       content:
@@ -103,44 +108,42 @@ router.get('/:id', checkJwt, getTariffByIdValidation, handleValidationErrors, ta
  *           schema:
  *             type: object
  *             required:
+ *               - serial_number
  *               - location_id
  *               - energy_resource_type_id
- *               - price
- *               - valid_from
  *             properties:
+ *               serial_number:
+ *                 type: string
+ *                 maxLength: 100
  *               location_id:
  *                 type: integer
+ *                 minimum: 1
  *               energy_resource_type_id:
  *                 type: integer
- *               price:
- *                 type: number
- *                 format: decimal
- *               valid_from:
- *                 type: string
- *                 format: date
- *               valid_to:
- *                 type: string
- *                 format: date
+ *                 minimum: 1
+ *               is_active:
+ *                 type: boolean
+ *                 default: true
  *     responses:
  *       201:
- *         description: Created
+ *         description: Meter created successfully
  *       409:
- *         description: Overlapping tariff period exists
+ *         description: Meter with this serial number already exists
  */
 router.post(
   '/',
   checkJwt,
   checkRole('admin'),
-  createTariffValidation,
+  createMeterValidation,
   handleValidationErrors,
-  tariffController.createTariff
+  meterController.createMeter
 );
 
 /**
  * @swagger
- * /api/tariffs/{id}:
+ * /api/meters/{id}:
  *   put:
- *     tags: [Tariffs]
+ *     tags: [Meters]
  *     parameters:
  *       - name: id
  *         in: path
@@ -154,43 +157,40 @@ router.post(
  *           schema:
  *             type: object
  *             properties:
+ *               serial_number:
+ *                 type: string
+ *                 maxLength: 100
  *               location_id:
  *                 type: integer
+ *                 minimum: 1
  *               energy_resource_type_id:
  *                 type: integer
- *               price:
- *                 type: number
- *                 format: decimal
- *               valid_from:
- *                 type: string
- *                 format: date
- *               valid_to:
- *                 type: string
- *                 format: date
+ *                 minimum: 1
+ *               is_active:
+ *                 type: boolean
  *     responses:
  *       200:
- *         description: Updated
+ *         description: Meter updated successfully
  *       404:
- *         description: Tariff not found
+ *         description: Meter not found
  *       409:
- *         description: Overlapping tariff period exists
+ *         description: Serial number already exists
  */
 router.put(
   '/:id',
   checkJwt,
   checkRole('admin'),
-  updateTariffValidation,
+  updateMeterValidation,
   handleValidationErrors,
-  tariffController.updateTariff
+  meterController.updateMeter
 );
 
 /**
  * @swagger
- * /api/tariffs/{id}:
+ * /api/meters/{id}:
  *   delete:
- *     summary: Delete tariff
- *     description: Permanently deletes a tariff by ID
- *     tags: [Tariffs]
+ *     description: Permanently deletes meter. Only inactive meters can be deleted.
+ *     tags: [Meters]
  *     parameters:
  *       - name: id
  *         in: path
@@ -199,17 +199,19 @@ router.put(
  *           type: integer
  *     responses:
  *       200:
- *         description: Tariff deleted permanently
+ *         description: Meter deleted permanently
+ *       400:
+ *         description: Cannot delete active meter
  *       404:
- *         description: Tariff not found
+ *         description: Meter not found
  */
 router.delete(
   '/:id',
   checkJwt,
   checkRole('admin'),
-  getTariffByIdValidation,
+  getMeterByIdValidation,
   handleValidationErrors,
-  tariffController.deleteTariff
+  meterController.deleteMeter
 );
 
 module.exports = router;

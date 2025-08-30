@@ -18,10 +18,7 @@ class TariffService {
     }
 
     if (filters.valid_to) {
-      where[Op.or] = [
-        { valid_to: { [Op.lte]: filters.valid_to } },
-        { valid_to: null }, 
-      ];
+      where[Op.or] = [{ valid_to: { [Op.lte]: filters.valid_to } }, { valid_to: null }];
     }
 
     return await Tariff.findAll({

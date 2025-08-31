@@ -61,7 +61,6 @@ const { checkJwt, checkRole } = require('../middlewares/authMiddleware');
 router.get(
   '/',
   checkJwt,
-  checkRole('admin'),
   getUsersQueryValidation,
   handleValidationErrors,
   userController.getAllUsers
@@ -87,7 +86,6 @@ router.get(
 router.get(
   '/:id',
   checkJwt,
-  checkRole('admin'),
   getUserByIdValidation,
   handleValidationErrors,
   userController.getUserById

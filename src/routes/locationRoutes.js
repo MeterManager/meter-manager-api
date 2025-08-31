@@ -8,7 +8,7 @@ const {
   getLocationsQueryValidation,
   handleValidationErrors,
 } = require('../middlewares/locationValidation');
-const { checkJwt, checkRole } = require('../middlewares/authMiddleware');
+const { checkJwt, checkRole, logAuth } = require('../middlewares/authMiddleware');
 
 /**
  * @swagger
@@ -84,6 +84,7 @@ router.get('/:id', checkJwt, getLocationByIdValidation, handleValidationErrors, 
 router.post(
   '/',
   checkJwt,
+  logAuth,          
   checkRole('admin'),
   createLocationValidation,
   handleValidationErrors,

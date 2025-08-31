@@ -12,14 +12,26 @@ function logAuth(req, res, next) {
   next();
 }
 
-function checkRole(role) {
+function checkRole(requiredRole) {
   return (req, res, next) => {
-    const userRoles = req.auth?.['https://energy-api.local/roles'] || [];
-    if (userRoles.includes(role)) {
-      next();
-    } else {
-      res.status(403).json({ message: 'access denied' });
+    console.log('=== Role Check Debug ===');
+    console.log('Required role:', requiredRole);
+    console.log('req.auth:', req.auth);
+    
+    const userRoles = req.auth?.payload?.['https://energy-api.local/roles'] || [];
+    console.log('User roles found:', userRoles);
+    console.log('Includes required role?', userRoles.includes(requiredRole));
+    
+    if (userRoles.includes(requiredRole)) {
+      console.log('Access granted');
+      return next();
     }
+    
+    console.log('Access denied');
+    return res.status(403).json({ 
+      message: 'Access denied. Missing role: ' + requiredRole,
+      debug: { userRoles, requiredRole }
+    });
   };
 }
 

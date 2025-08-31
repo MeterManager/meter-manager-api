@@ -40,7 +40,7 @@ const getLocationsQueryValidation = [
     .isLength({ min: 1, max: 255 })
     .withMessage('Name filter must be between 1 and 255 characters'),
 ];
-
+  
 // Middleware to handle validation errors
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);

@@ -8,6 +8,7 @@ const {
   getTenantsQueryValidation,
   handleValidationErrors,
 } = require('../middlewares/TenantValidation');
+const { checkJwt, checkRole } = require('../middlewares/authMiddleware');
 
 /**
  * @swagger
@@ -46,7 +47,7 @@ const {
  *       200:
  *         description: Success
  */
-router.get('/', getTenantsQueryValidation, handleValidationErrors, tenantController.getAllTenants);
+router.get('/', checkJwt, getTenantsQueryValidation, handleValidationErrors, tenantController.getAllTenants);
 
 /**
  * @swagger
@@ -65,7 +66,7 @@ router.get('/', getTenantsQueryValidation, handleValidationErrors, tenantControl
  *       404:
  *         description: Not found
  */
-router.get('/:id', getTenantByIdValidation, handleValidationErrors, tenantController.getTenantById);
+router.get('/:id', checkJwt, getTenantByIdValidation, handleValidationErrors, tenantController.getTenantById);
 
 /**
  * @swagger
@@ -100,7 +101,14 @@ router.get('/:id', getTenantByIdValidation, handleValidationErrors, tenantContro
  *       201:
  *         description: Created
  */
-router.post('/', createTenantValidation, handleValidationErrors, tenantController.createTenant);
+router.post(
+  '/',
+  checkJwt,
+  checkRole('admin'),
+  createTenantValidation,
+  handleValidationErrors,
+  tenantController.createTenant
+);
 
 /**
  * @swagger
@@ -138,7 +146,14 @@ router.post('/', createTenantValidation, handleValidationErrors, tenantControlle
  *       200:
  *         description: Updated
  */
-router.put('/:id', updateTenantValidation, handleValidationErrors, tenantController.updateTenant);
+router.put(
+  '/:id',
+  checkJwt,
+  checkRole('admin'),
+  updateTenantValidation,
+  handleValidationErrors,
+  tenantController.updateTenant
+);
 
 /**
  * @swagger
@@ -161,6 +176,13 @@ router.put('/:id', updateTenantValidation, handleValidationErrors, tenantControl
  *       404:
  *         description: Tenant not found
  */
-router.delete('/:id', getTenantByIdValidation, handleValidationErrors, tenantController.deleteTenant);
+router.delete(
+  '/:id',
+  checkJwt,
+  checkRole('admin'),
+  getTenantByIdValidation,
+  handleValidationErrors,
+  tenantController.deleteTenant
+);
 
 module.exports = router;

@@ -8,6 +8,7 @@ const {
   getLocationsQueryValidation,
   handleValidationErrors,
 } = require('../middlewares/locationValidation');
+const { checkJwt, checkRole, logAuth } = require('../middlewares/authMiddleware');
 
 /**
  * @swagger
@@ -35,7 +36,7 @@ const {
  *       200:
  *         description: Success
  */
-router.get('/', getLocationsQueryValidation, handleValidationErrors, locationController.getAllLocations);
+router.get('/', checkJwt, getLocationsQueryValidation, handleValidationErrors, locationController.getAllLocations);
 
 /**
  * @swagger
@@ -54,7 +55,7 @@ router.get('/', getLocationsQueryValidation, handleValidationErrors, locationCon
  *       404:
  *         description: Not found
  */
-router.get('/:id', getLocationByIdValidation, handleValidationErrors, locationController.getLocationById);
+router.get('/:id', checkJwt, getLocationByIdValidation, handleValidationErrors, locationController.getLocationById);
 
 /**
  * @swagger
@@ -80,7 +81,15 @@ router.get('/:id', getLocationByIdValidation, handleValidationErrors, locationCo
  *       201:
  *         description: Created
  */
-router.post('/', createLocationValidation, handleValidationErrors, locationController.createLocation);
+router.post(
+  '/',
+  checkJwt,
+  logAuth,          
+  checkRole('admin'),
+  createLocationValidation,
+  handleValidationErrors,
+  locationController.createLocation
+);
 
 /**
  * @swagger
@@ -110,7 +119,14 @@ router.post('/', createLocationValidation, handleValidationErrors, locationContr
  *       200:
  *         description: Updated
  */
-router.put('/:id', updateLocationValidation, handleValidationErrors, locationController.updateLocation);
+router.put(
+  '/:id',
+  checkJwt,
+  checkRole('admin'),
+  updateLocationValidation,
+  handleValidationErrors,
+  locationController.updateLocation
+);
 
 /**
  * @swagger
@@ -133,6 +149,13 @@ router.put('/:id', updateLocationValidation, handleValidationErrors, locationCon
  *       404:
  *         description: Location not found
  */
-router.delete('/:id', getLocationByIdValidation, handleValidationErrors, locationController.deleteLocation);
+router.delete(
+  '/:id',
+  checkJwt,
+  checkRole('admin'),
+  getLocationByIdValidation,
+  handleValidationErrors,
+  locationController.deleteLocation
+);
 
 module.exports = router;

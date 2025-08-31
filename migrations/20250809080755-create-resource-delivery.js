@@ -11,10 +11,10 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'RESTRICT',
       },
-      resource_type: {
-        type: Sequelize.STRING(50),
+      energy_resource_type_id: {
+        type: Sequelize.INTEGER,
         allowNull: false,
-        references: { model: 'resource_configurations', key: 'resource_type' },
+        references: { model: 'energy_resource_types', key: 'id' },
         onUpdate: 'CASCADE',
         onDelete: 'RESTRICT',
       },

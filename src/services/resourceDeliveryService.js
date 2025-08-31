@@ -1,4 +1,4 @@
-const { ResourceDelivery, ResourceConfiguration, Location } = require('../../models');
+const { ResourceDelivery, EnergyResourceType, Location } = require('../../models');
 const { Op } = require('sequelize');
 
 class ResourceDeliveryService {
@@ -9,8 +9,8 @@ class ResourceDeliveryService {
       where.location_id = filters.location_id;
     }
 
-    if (filters.resource_type) {
-      where.resource_type = filters.resource_type;
+    if (filters.energy_resource_type_id) {
+      where.energy_resource_type_id = filters.energy_resource_type_id;
     }
 
     if (filters.delivery_date) {
@@ -23,14 +23,14 @@ class ResourceDeliveryService {
     const result = await ResourceDelivery.findAndCountAll({
       where,
       include: [
-        { model: Location, as: 'location' },
-        { model: ResourceConfiguration, as: 'resourceConfiguration' },
+        { model: Location, as: 'location', attributes: ['id', 'name'] },
+        { model: EnergyResourceType, as: 'energyResourceType', attributes: ['id', 'name', 'unit'] },
       ],
       order: [['delivery_date', 'DESC']],
       limit,
       offset: (page - 1) * limit,
     });
-    
+
     return {
       data: result.rows,
       count: result.count,
@@ -40,22 +40,30 @@ class ResourceDeliveryService {
   async getDeliveryById(id) {
     return await ResourceDelivery.findByPk(id, {
       include: [
-        { model: Location, as: 'location' },
-        { model: ResourceConfiguration, as: 'resourceConfiguration' },
+        { model: Location, as: 'location', attributes: ['id', 'name'] },
+        { model: EnergyResourceType, as: 'energyResourceType', attributes: ['id', 'name', 'unit'] },
       ],
     });
   }
 
-
   async createResourceDelivery(data) {
-    const { location_id, resource_type, delivery_date, quantity, unit, price_per_unit, total_cost, supplier } = data;
+    const {
+      location_id,
+      energy_resource_type_id,
+      delivery_date,
+      quantity,
+      unit,
+      price_per_unit,
+      total_cost,
+      supplier,
+    } = data;
 
-    if (!location_id || !resource_type || !delivery_date || !quantity || !unit) {
+    if (!location_id || !energy_resource_type_id || !delivery_date || !quantity || !unit) {
       throw new Error('Required fields missing');
     }
 
     const existing = await ResourceDelivery.findOne({
-      where: { location_id, resource_type, delivery_date },
+      where: { location_id, energy_resource_type_id, delivery_date },
     });
     if (existing) {
       throw new Error('Delivery for this location, resource type, and date already exists');
@@ -63,7 +71,7 @@ class ResourceDeliveryService {
 
     return await ResourceDelivery.create({
       location_id,
-      resource_type,
+      energy_resource_type_id,
       delivery_date,
       quantity,
       unit,
@@ -77,11 +85,11 @@ class ResourceDeliveryService {
     const delivery = await ResourceDelivery.findByPk(id);
     if (!delivery) throw new Error('Delivery not found');
 
-    if (updateData.location_id || updateData.resource_type || updateData.delivery_date) {
+    if (updateData.location_id || updateData.energy_resource_type_id || updateData.delivery_date) {
       const existing = await ResourceDelivery.findOne({
         where: {
           location_id: updateData.location_id || delivery.location_id,
-          resource_type: updateData.resource_type || delivery.resource_type,
+          energy_resource_type_id: updateData.energy_resource_type_id || delivery.energy_resource_type_id,
           delivery_date: updateData.delivery_date || delivery.delivery_date,
           id: { [Op.ne]: id },
         },

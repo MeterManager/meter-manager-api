@@ -17,7 +17,6 @@ const getAllResourceDeliveries = async (req, res) => {
   }
 };
 
-
 const getResourceDeliveryById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -50,12 +49,6 @@ const createResourceDelivery = async (req, res) => {
       data: delivery,
     });
   } catch (error) {
-    if (error.message.includes('Delivery not found'))
-      return res.status(404).json({
-        success: false,
-        message: error.message,
-      });
-
     res.status(400).json({
       success: false,
       message: error.message,

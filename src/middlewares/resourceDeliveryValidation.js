@@ -7,11 +7,11 @@ const createResourceDeliveryValidation = [
     .isInt({ min: 1 })
     .withMessage('location_id must be a positive integer'),
 
-  body('resource_type')
+  body('energy_resource_type_id')
     .notEmpty()
-    .withMessage('resource_type is required')
-    .isString()
-    .withMessage('resource_type must be a string'),
+    .withMessage('energy_resource_type_id is required')
+    .isInt({ min: 1 })
+    .withMessage('energy_resource_type_id must be a positive integer'),
 
   body('delivery_date')
     .notEmpty()
@@ -39,7 +39,10 @@ const updateResourceDeliveryValidation = [
 
   body('location_id').optional().isInt({ min: 1 }).withMessage('location_id must be a positive integer'),
 
-  body('resource_type').optional().isString().withMessage('resource_type must be a string'),
+  body('energy_resource_type_id')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('energy_resource_type_id must be a positive integer'),
 
   body('delivery_date').optional().isISO8601().withMessage('delivery_date must be a valid date'),
 
@@ -61,7 +64,10 @@ const getDeleteResourceDeliveryByIdValidation = [
 const getResourceDeliveriesQueryValidation = [
   query('location_id').optional().isInt({ min: 1 }).withMessage('location_id must be a positive integer'),
 
-  query('resource_type').optional().isString().withMessage('resource_type must be a string'),
+  query('energy_resource_type_id')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('energy_resource_type_id must be a positive integer'),
 
   query('delivery_date').optional().isISO8601().withMessage('delivery_date must be a valid date'),
 ];

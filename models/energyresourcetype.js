@@ -5,6 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       this.hasMany(models.Meter, { foreignKey: 'energy_resource_type_id' });
       this.hasMany(models.Tariff, { foreignKey: 'energy_resource_type_id' });
+      this.hasMany(models.ResourceDelivery, { foreignKey: 'energy_resource_type_id', as: 'resourceDeliveries' });
     }
   }
   EnergyResourceType.init(

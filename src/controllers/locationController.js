@@ -1,4 +1,4 @@
-const locationService = require('../services/LocationService');
+const locationService = require('../services/locationService');
 
 const getAllLocations = async (req, res) => {
   try {

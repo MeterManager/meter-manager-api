@@ -5,7 +5,7 @@ const updateUserValidation = [
 
   body('full_name').optional().isString().withMessage('Full name must be a string'),
 
-  body('role').optional().isIn(['admin', 'manager', 'user']).withMessage('Role must be one of: admin, manager, user'),
+  body('role').optional().isIn(['admin', 'manager', 'user']).withMessage('Role must be one of: admin, operator, user'),
 
   body('is_active').optional().isBoolean().withMessage('is_active must be a boolean'),
 ];

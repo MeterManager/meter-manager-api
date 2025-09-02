@@ -17,6 +17,8 @@ class UserService {
       where.is_active = filters.is_active;
     }
 
+    where.role = { [Op.ne]: 'admin' };
+
     return await User.findAll({
       where,
       order: [['created_at', 'DESC']],
@@ -34,6 +36,10 @@ class UserService {
   async updateUser(id, updateData) {
     const user = await this.getUserById(id);
 
+    if (user.role === 'admin' && updateData.role) {
+      throw new Error('Cannot change the role of an admin user');
+    }
+
     return await user.update({
       ...(updateData.full_name && { full_name: updateData.full_name }),
       ...(updateData.role && { role: updateData.role }),
@@ -43,7 +49,10 @@ class UserService {
 
   async deleteUser(id) {
     const user = await this.getUserById(id);
-    return await user.destroy();
+    if (user.role === 'admin') {
+      throw new Error('Cannot delete an admin user.');
+    }
+    return await user.update({ is_active: false });
   }
 }
 

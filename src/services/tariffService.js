@@ -51,6 +51,14 @@ class TariffService {
       throw new Error('Location, energy resource type, price and valid_from are required');
     }
 
+    const location = await Location.findByPk(location_id);
+    if (!location) throw new Error('Location not found');
+    if (!location.is_active) throw new Error('Cannot create tariff - location is inactive');
+
+    const energyResourceType = await EnergyResourceType.findByPk(energy_resource_type_id);
+    if (!energyResourceType) throw new Error('Energy resource type not found');
+    if (!energyResourceType.is_active) throw new Error('Cannot create tariff - energy resource type is inactive');
+
     const overlappingTariff = await Tariff.findOne({
       where: {
         location_id,
@@ -82,6 +90,18 @@ class TariffService {
     const tariff = await this.getTariffById(id);
 
     const { location_id, energy_resource_type_id, price, valid_from, valid_to } = updateData;
+
+    if (location_id && location_id !== tariff.location_id) {
+      const location = await Location.findByPk(location_id);
+      if (!location) throw new Error('Location not found');
+      if (!location.is_active) throw new Error('Cannot update tariff - location is inactive');
+    }
+
+    if (energy_resource_type_id && energy_resource_type_id !== tariff.energy_resource_type_id) {
+      const energyResourceType = await EnergyResourceType.findByPk(energy_resource_type_id);
+      if (!energyResourceType) throw new Error('Energy resource type not found');
+      if (!energyResourceType.is_active) throw new Error('Cannot update tariff - energy resource type is inactive');
+    }
 
     if (valid_from || valid_to) {
       const overlappingTariff = await Tariff.findOne({

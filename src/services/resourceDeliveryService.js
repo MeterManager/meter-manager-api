@@ -62,6 +62,14 @@ class ResourceDeliveryService {
       throw new Error('Required fields missing');
     }
 
+    const location = await Location.findByPk(location_id);
+    if (!location) throw new Error('Location not found');
+    if (!location.is_active) throw new Error('Cannot create delivery - location is inactive');
+
+    const energyResourceType = await EnergyResourceType.findByPk(energy_resource_type_id);
+    if (!energyResourceType) throw new Error('Energy resource type not found');
+    if (!energyResourceType.is_active) throw new Error('Cannot create delivery - energy resource type is inactive');
+
     const existing = await ResourceDelivery.findOne({
       where: { location_id, energy_resource_type_id, delivery_date },
     });
@@ -84,6 +92,18 @@ class ResourceDeliveryService {
   async updateResourceDelivery(id, updateData) {
     const delivery = await ResourceDelivery.findByPk(id);
     if (!delivery) throw new Error('Delivery not found');
+
+    if (updateData.location_id && updateData.location_id !== delivery.location_id) {
+      const location = await Location.findByPk(updateData.location_id);
+      if (!location) throw new Error('Location not found');
+      if (!location.is_active) throw new Error('Cannot update delivery - location is inactive');
+    }
+
+    if (updateData.energy_resource_type_id && updateData.energy_resource_type_id !== delivery.energy_resource_type_id) {
+      const energyResourceType = await EnergyResourceType.findByPk(updateData.energy_resource_type_id);
+      if (!energyResourceType) throw new Error('Energy resource type not found');
+      if (!energyResourceType.is_active) throw new Error('Cannot update delivery - energy resource type is inactive');
+    }
 
     if (updateData.location_id || updateData.energy_resource_type_id || updateData.delivery_date) {
       const existing = await ResourceDelivery.findOne({

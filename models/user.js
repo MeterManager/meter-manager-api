@@ -10,6 +10,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       auth0_user_id: { type: DataTypes.STRING(255), allowNull: false },
       full_name: { type: DataTypes.STRING(255), allowNull: false },
+      email: { type: DataTypes.STRING(255), allowNull: false, unique: true, validate: { isEmail: true } }, 
       role: { type: DataTypes.STRING(50), allowNull: false },
       is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
       created_at: { type: DataTypes.DATE, defaultValue: sequelize.literal('CURRENT_TIMESTAMP') },

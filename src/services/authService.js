@@ -12,34 +12,52 @@ class AuthService {
       const fullNameFromEmail =
         payload['https://energy-api.local/full_name'] || (email ? email.split('@')[0] : 'Unknown User');
 
+      let userByEmail = email ? await User.findOne({ where: { email } }) : null;
+
+      if (userByEmail && !userByEmail.is_active) {
+        console.error(`Заблоковано логін: ${email}`);
+        throw new Error('Ваш акаунт деактивовано. Зверніться до адміністратора.');
+      }
       let user = await User.findOne({ where: { auth0_user_id: auth0UserId } });
-      console.log('Existing user from DB:', user?.toJSON?.() || null);
 
       if (!user) {
-        user = await User.create({
-          auth0_user_id: auth0UserId,
-          full_name: fullNameFromEmail,
-          role: payload['https://energy-api.local/roles']?.[0] || 'operator',
-          is_active: true,
-        });
-        console.log('Created new user:', user.toJSON());
+        if (userByEmail) {
+          user = await userByEmail.update({
+            auth0_user_id: auth0UserId,
+            full_name: fullNameFromEmail || userByEmail.full_name,
+            role: payload['https://energy-api.local/roles']?.[0] || userByEmail.role,
+          });
+        } else {
+          user = await User.create({
+            auth0_user_id: auth0UserId,
+            email,
+            full_name: fullNameFromEmail,
+            role: payload['https://energy-api.local/roles']?.[0] || 'operator',
+            is_active: true,
+          });
+        }
       } else {
+        if (!user.is_active) {
+          console.error(` Заблоковано логін (auth0 id): ${auth0UserId}`);
+          throw new Error('Ваш акаунт деактивовано. Зверніться до адміністратора.');
+        }
         await user.update({
           full_name: fullNameFromEmail || user.full_name,
           role: payload['https://energy-api.local/roles']?.[0] || user.role,
+          email: email || user.email,
         });
-        console.log('Updated user:', user.toJSON());
       }
 
       return {
         id: user.id,
         auth0_user_id: user.auth0_user_id,
         full_name: user.full_name,
+        email:user.email,
         role: user.role,
         is_active: user.is_active,
       };
     } catch (error) {
-      console.error('Sync user error:', error);
+      console.error('Sync user error:', error.message);
       throw new Error(`User synchronisation error: ${error.message}`);
     }
   }

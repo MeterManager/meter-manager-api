@@ -28,12 +28,12 @@ const router = express.Router();
  * /api/auth/verify-token:
  *   get:
  *     tags: [Auth]
- *     description: Verifies the JWT token and synchronizes the user with the database, returning user data
+ *     description: Verifies the JWT token and synchronizes the user with the database, returning user data.
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Success
+ *         description: Token verified successfully
  *         content:
  *           application/json:
  *             schema:
@@ -43,6 +43,17 @@ const router = express.Router();
  *                   type: string
  *                 user:
  *                   $ref: '#/components/schemas/User'
+ *       403:
+ *         description: User is inactive
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 user:
+ *                   type: null
  *       401:
  *         description: Unauthorized
  *       500:

@@ -2,8 +2,7 @@ const { User } = require('../../models');
 
 class AuthService {
   async syncUser(payload) {
-    console.log('--- syncUser ---');
-    console.log('Payload received:', payload);
+    console.log('--- syncUser --- Payload received:', payload);
 
     try {
       const auth0UserId = payload.sub;
@@ -15,9 +14,10 @@ class AuthService {
       let userByEmail = email ? await User.findOne({ where: { email } }) : null;
 
       if (userByEmail && !userByEmail.is_active) {
-        console.error(`Заблоковано логін: ${email}`);
-        throw new Error('Ваш акаунт деактивовано. Зверніться до адміністратора.');
+        console.error(`Login blocked (email): ${email}`);
+        return { inactive: true, message: 'Your account is deactivated. Contact admin.' };
       }
+
       let user = await User.findOne({ where: { auth0_user_id: auth0UserId } });
 
       if (!user) {
@@ -38,8 +38,8 @@ class AuthService {
         }
       } else {
         if (!user.is_active) {
-          console.error(` Заблоковано логін (auth0 id): ${auth0UserId}`);
-          throw new Error('Ваш акаунт деактивовано. Зверніться до адміністратора.');
+          console.error(`Login blocked (auth0 id): ${auth0UserId}`);
+          return { inactive: true, message: 'Your account is deactivated. Contact admin.' };
         }
         await user.update({
           full_name: fullNameFromEmail || user.full_name,
@@ -52,7 +52,7 @@ class AuthService {
         id: user.id,
         auth0_user_id: user.auth0_user_id,
         full_name: user.full_name,
-        email:user.email,
+        email: user.email,
         role: user.role,
         is_active: user.is_active,
       };

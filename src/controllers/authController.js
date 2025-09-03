@@ -5,14 +5,20 @@ class AuthController {
     try {
       const payload = req.auth?.payload;
 
-      console.log('--- verifyToken ---');
-      console.log('Decoded payload from token:', payload);
+      console.log('--- verifyToken --- Decoded payload from token:', payload);
 
       if (!payload?.sub) {
         return res.status(400).json({ message: 'sub not found in token' });
       }
 
       const user = await AuthService.syncUser(payload);
+
+      if (user.inactive) {
+        return res.status(403).json({
+          message: user.message,
+          user: null,
+        });
+      }
 
       res.json({
         message: 'Token verified',

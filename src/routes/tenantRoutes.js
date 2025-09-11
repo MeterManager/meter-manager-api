@@ -175,7 +175,7 @@ router.put(
  * @swagger
  * /api/tenants/{id}:
  *   delete:
-\ *     description: Permanently deletes tenant and ALL related data (meter tenants). Only inactive tenants can be deleted.
+ *     description: Permanently deletes tenant and ALL related data (meter tenants). Only inactive tenants can be deleted.
  *     tags: [Tenants]
  *     parameters:
  *       - name: id

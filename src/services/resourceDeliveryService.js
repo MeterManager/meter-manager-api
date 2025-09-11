@@ -122,7 +122,7 @@ class ResourceDeliveryService {
     return await delivery.update(updateData);
   }
 
-  async deleteDelivery(id) {
+  async deleteResourceDelivery(id) {
     const delivery = await ResourceDelivery.findByPk(id);
     if (!delivery) throw new Error('Delivery not found');
 

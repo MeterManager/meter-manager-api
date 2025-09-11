@@ -120,6 +120,7 @@ router.post(
  * @swagger
  * /api/resource-types/{id}:
  *   put:
+ *     description: Updates resource type. When deactivating (is_active=false), all dependent meters will be automatically deactivated.
  *     tags: [Resource Types]
  *     parameters:
  *       - name: id
@@ -142,9 +143,20 @@ router.post(
  *                 type: boolean
  *     responses:
  *       200:
- *         description: Updated
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/ResourceType'
  *       404:
- *         description: Not found
+ *         description: Resource type not found
  *       409:
  *         description: Resource type already exists
  */
@@ -161,8 +173,7 @@ router.put(
  * @swagger
  * /api/resource-types/{id}:
  *   delete:
- *     summary: Delete resource type (only inactive)
- *     description: Permanently deletes resource type. Only inactive resource types can be deleted.
+ *     description: Permanently deletes resource type and ALL related data (meters, deliveries). Only inactive resource types can be deleted.
  *     tags: [Resource Types]
  *     parameters:
  *       - name: id
@@ -172,7 +183,16 @@ router.put(
  *           type: integer
  *     responses:
  *       200:
- *         description: Resource type deleted permanently
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
  *       400:
  *         description: Cannot delete active resource type
  *       404:
@@ -186,5 +206,41 @@ router.delete(
   handleValidationErrors,
   resourceTypeController.deleteResourceType
 );
+
+/**
+ * @swagger
+ * /api/resource-types/{id}/dependencies:
+ *   get:
+ *     description: Returns information about dependent objects (meters, deliveries) for cascade deactivation warning
+ *     tags: [Resource Types]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     active_meters:
+ *                       type: integer
+ *                     deliveries:
+ *                       type: integer
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Resource type not found
+ */
+router.get('/:id/dependencies', checkJwt, getResourceTypeByIdValidation, handleValidationErrors, resourceTypeController.getResourceTypeDependencies);
 
 module.exports = router;

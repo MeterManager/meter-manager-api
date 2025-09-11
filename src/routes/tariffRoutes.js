@@ -211,5 +211,36 @@ router.delete(
   handleValidationErrors,
   tariffController.deleteTariff
 );
+/**
+ * @swagger
+ * /api/tariffs/applicable:
+ *   get:
+ *     tags: [Tariffs]
+ *     summary: Get applicable tariff for location, resource and date
+ *     parameters:
+ *       - name: location_id
+ *         in: query
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - name: energy_resource_type_id
+ *         in: query
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - name: reading_date
+ *         in: query
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Applicable tariff found
+ *       404:
+ *         description: No applicable tariff
+ */
+router.get('/applicable', checkJwt, tariffController.getApplicableTariff);
+
 
 module.exports = router;

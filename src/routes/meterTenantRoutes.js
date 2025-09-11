@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const meterController = require('../controllers/meterController');
+const meterTenantController = require('../controllers/meterTenantController');
 const {
   createMeterTenantValidation,
   getMeterTenantByIdValidation,
@@ -32,7 +32,7 @@ const { checkJwt, checkRole } = require('../middlewares/authMiddleware');
 
 /**
  * @swagger
- * /api/meter-tenants:
+* /api/meter-tenants:
  *   get:
  *     tags: [Meter-Tenants]
  *     parameters:
@@ -55,7 +55,7 @@ const { checkJwt, checkRole } = require('../middlewares/authMiddleware');
  *       200:
  *         description: Success
  */
-router.get('/', checkJwt, getMeterTenantsQueryValidation, handleValidationErrors, meterController.getAllMeterTenants);
+router.get('/', checkJwt, getMeterTenantsQueryValidation, handleValidationErrors, meterTenantController.getAllMeterTenants);
 
 /**
  * @swagger
@@ -93,7 +93,7 @@ router.post(
   checkRole('admin'),
   createMeterTenantValidation,
   handleValidationErrors,
-  meterController.createMeterTenant
+  meterTenantController.createMeterTenant
 );
 
 /**
@@ -141,7 +141,7 @@ router.put(
   getMeterTenantByIdValidation,
   createMeterTenantValidation,
   handleValidationErrors,
-  meterController.updateMeterTenant
+  meterTenantController.updateMeterTenant
 );
 
 /**
@@ -167,7 +167,7 @@ router.delete(
   checkRole('admin'),
   getMeterTenantByIdValidation,
   handleValidationErrors,
-  meterController.deleteMeterTenant
+  meterTenantController.deleteMeterTenant
 );
 
 module.exports = router;

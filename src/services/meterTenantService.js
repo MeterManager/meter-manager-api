@@ -1,4 +1,4 @@
-const { MeterTenant, Tenant, Meter, Location } = require('../../models');
+const { MeterTenant, Tenant, Meter, Location,EnergyResourceType } = require('../../models');
 const { Op } = require('sequelize');
 
 class MeterTenantService {
@@ -29,12 +29,17 @@ class MeterTenantService {
         {
           model: Meter,
           attributes: ['id', 'serial_number', 'energy_resource_type_id', 'location_id'],
+         
           include: [
+            {
+              model: EnergyResourceType,
+              attributes: ['id', 'name'],
+            },
             {
               model: Location,
               attributes: ['id', 'name', 'address'],
             }
-          ]
+          ],
         },
       ],
     });
@@ -46,7 +51,17 @@ class MeterTenantService {
         { model: Tenant, attributes: ['id', 'name'] },
         { 
           model: Meter, 
-          attributes: ['id', 'serial_number', 'location_id', 'energy_resource_type_id'] 
+          attributes: ['id', 'serial_number', 'location_id', 'energy_resource_type_id'], 
+          include: [
+            {
+              model: EnergyResourceType,
+              attributes: ['id', 'name'],
+            },
+            {
+              model: Location,
+              attributes: ['id', 'name', 'address'],
+            }
+          ],
         },
       ],
     });

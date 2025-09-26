@@ -1,4 +1,4 @@
-const { Meter, MeterTenant, Tenant, Location, EnergyResourceType } = require('../../models');
+const { Meter, MeterTenant, Tenant, Location, EnergyResourceType, ResourceDelivery, sequelize } = require('../../models');
 const { Op } = require('sequelize');
 
 class MeterService {
@@ -30,6 +30,21 @@ class MeterService {
     });
     if (!meter) throw new Error('Meter not found');
     return meter;
+  }
+
+  async getMeterDependencies(id) {
+    const activeMeterTenants = await MeterTenant.count({
+      where: { meter_id: id, [Op.or]: [{ assigned_to: null }, { assigned_to: { [Op.gte]: new Date() } }] },
+    });
+
+    const deliveries = await ResourceDelivery.count({
+      where: { meter_id: id },
+    });
+
+    return {
+      active_meter_tenants: activeMeterTenants,
+      deliveries: deliveries,
+    };
   }
 
   async createMeter(meterData) {
@@ -81,6 +96,10 @@ class MeterService {
       if (!energyResourceType.is_active) throw new Error('Cannot update meter with inactive energy resource type');
     }
 
+    if (is_active === false && meter.is_active === true) {
+      await this.cascadeDeactivateMeter(id);
+    }
+
     return await meter.update({
       ...(serial_number && { serial_number }),
       ...(location_id && { location_id }),
@@ -89,14 +108,58 @@ class MeterService {
     });
   }
 
+  async cascadeDeactivateMeter(id) {
+    const transaction = await sequelize.transaction();
+    try {
+      const meterTenantsCount = await MeterTenant.count({
+        where: { meter_id: id, [Op.or]: [{ assigned_to: null }, { assigned_to: { [Op.gte]: new Date() } }] },
+      });
+
+      await MeterTenant.update(
+        { assigned_to: new Date() },
+        {
+          where: {
+            meter_id: id,
+            [Op.or]: [{ assigned_to: null }, { assigned_to: { [Op.gte]: new Date() } }],
+          },
+          transaction,
+        }
+      );
+
+      await transaction.commit();
+      return { deactivated_meter_tenants: meterTenantsCount };
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  }
+
   async deleteMeter(id) {
     const meter = await this.getMeterById(id);
+    if (meter.is_active) throw new Error('Cannot delete active meter. Deactivate it first.');
 
-    if (meter.is_active) {
-      throw new Error('Cannot delete active meter. Deactivate it first.');
-    }
-    await MeterTenant.destroy({ where: { meter_id: id } });
+    await this.cascadeDeleteMeter(id);
     return await meter.destroy();
+  }
+
+  async cascadeDeleteMeter(id) {
+    const transaction = await sequelize.transaction();
+    try {
+      const meterTenantsCount = await MeterTenant.count({ where: { meter_id: id } });
+      const deliveriesCount = await ResourceDelivery.count({ where: { meter_id: id } });
+
+      await MeterTenant.destroy({ where: { meter_id: id }, transaction });
+      await ResourceDelivery.destroy({ where: { meter_id: id }, transaction });
+
+      await transaction.commit();
+      return {
+        deleted_meter_tenants: meterTenantsCount,
+        deleted_deliveries: deliveriesCount,
+      };
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   }
 
   async getAllMeterTenants(filters = {}) {
@@ -171,8 +234,7 @@ class MeterService {
       if (!meter.Location) throw new Error('Location not found');
       if (!meter.Location.is_active) throw new Error('Cannot assign meter with inactive location');
       if (!meter.EnergyResourceType) throw new Error('Energy resource type not found');
-      if (!meter.EnergyResourceType.is_active)
-        throw new Error('Cannot assign meter with inactive energy resource type');
+      if (!meter.EnergyResourceType.is_active) throw new Error('Cannot assign meter with inactive energy resource type');
     }
 
     if (tenant_id && tenant_id !== meterTenant.tenant_id) {
@@ -204,7 +266,6 @@ class MeterService {
   async deleteMeterTenant(id) {
     const meterTenant = await MeterTenant.findByPk(id);
     if (!meterTenant) throw new Error('Meter tenant assignment not found');
-
     return await meterTenant.destroy();
   }
 }

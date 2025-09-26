@@ -1,4 +1,4 @@
-const { Location, Meter, ResourceDelivery, sequelize } = require('../../models');
+const { Location, Meter, ResourceDelivery, Tenant, sequelize } = require('../../models');
 const { Op } = require('sequelize');
 
 class LocationService {
@@ -73,11 +73,18 @@ class LocationService {
     
     try {
       const metersCount = await Meter.count({
-        where: { location_id: locationId, is_active: true }
+        where: { location_id: locationId, is_active: true },
+        transaction
       });
-      
+
       const deliveriesCount = await ResourceDelivery.count({
-        where: { location_id: locationId }
+        where: { location_id: locationId },
+        transaction
+      });
+
+      const tenantsCount = await Tenant.count({
+        where: { location_id: locationId, is_active: true },
+        transaction
       });
 
       await Meter.update(
@@ -91,11 +98,23 @@ class LocationService {
         }
       );
 
+      await Tenant.update(
+        { is_active: false },
+        {
+          where: {
+            location_id: locationId,
+            is_active: true
+          },
+          transaction
+        }
+      );
+
       await transaction.commit();
-      
+
       return {
         deactivated_meters: metersCount,
-        affected_deliveries: deliveriesCount
+        affected_deliveries: deliveriesCount,
+        deactivated_tenants: tenantsCount,
       };
     } catch (error) {
       await transaction.rollback();
@@ -112,9 +131,14 @@ class LocationService {
       where: { location_id: locationId }
     });
 
+    const activeTenants = await Tenant.count({
+      where: { location_id: locationId, is_active: true }
+    });
+
     return {
       active_meters: activeMeters,
-      deliveries: deliveries
+      deliveries: deliveries,
+      active_tenants: activeTenants
     };
   }
 
@@ -140,9 +164,10 @@ class LocationService {
         attributes: ['id'],
         transaction
       });
-      
+
       const meterIds = meters.map(meter => meter.id);
 
+      // Delete MeterTenant relations
       if (meterIds.length > 0) {
         await MeterTenant.destroy({
           where: { meter_id: { [Op.in]: meterIds } },
@@ -150,24 +175,35 @@ class LocationService {
         });
       }
 
+      // Delete Deliveries
       await ResourceDelivery.destroy({
         where: { location_id: locationId },
         transaction
       });
 
+      // Delete Meters
       await Meter.destroy({
         where: { location_id: locationId },
         transaction
       });
 
+      // Delete Tenants
+      await Tenant.destroy({
+        where: { location_id: locationId },
+        transaction
+      });
+
       await transaction.commit();
-      
+
       return {
         deleted_meters: meterIds.length,
         deleted_meter_tenants: meterIds.length > 0 ? await MeterTenant.count({
           where: { meter_id: { [Op.in]: meterIds } }
         }) : 0,
         deleted_deliveries: await ResourceDelivery.count({
+          where: { location_id: locationId }
+        }),
+        deleted_tenants: await Tenant.count({
           where: { location_id: locationId }
         })
       };

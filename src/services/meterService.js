@@ -1,4 +1,4 @@
-const { Meter, MeterTenant, Tenant, Location, EnergyResourceType, ResourceDelivery, sequelize } = require('../../models');
+const { Meter, MeterTenant, Tenant, Location, EnergyResourceType, sequelize } = require('../../models');
 const { Op } = require('sequelize');
 
 class MeterService {
@@ -37,13 +37,9 @@ class MeterService {
       where: { meter_id: id, [Op.or]: [{ assigned_to: null }, { assigned_to: { [Op.gte]: new Date() } }] },
     });
 
-    const deliveries = await ResourceDelivery.count({
-      where: { meter_id: id },
-    });
-
     return {
       active_meter_tenants: activeMeterTenants,
-      deliveries: deliveries,
+      deliveries: 0,
     };
   }
 
@@ -146,15 +142,13 @@ class MeterService {
     const transaction = await sequelize.transaction();
     try {
       const meterTenantsCount = await MeterTenant.count({ where: { meter_id: id } });
-      const deliveriesCount = await ResourceDelivery.count({ where: { meter_id: id } });
 
       await MeterTenant.destroy({ where: { meter_id: id }, transaction });
-      await ResourceDelivery.destroy({ where: { meter_id: id }, transaction });
 
       await transaction.commit();
       return {
         deleted_meter_tenants: meterTenantsCount,
-        deleted_deliveries: deliveriesCount,
+        deleted_deliveries: 0,
       };
     } catch (error) {
       await transaction.rollback();

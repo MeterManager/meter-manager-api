@@ -8,6 +8,7 @@ const {
   getResourceDeliveriesQueryValidation,
   handleValidationErrors,
 } = require('../middlewares/resourceDeliveryValidation');
+const { checkJwt, checkRole } = require('../middlewares/authMiddleware');
 
 /**
  * @swagger
@@ -20,8 +21,8 @@ const {
  *           type: integer
  *         location_id:
  *           type: integer
- *         resource_type:
- *           type: string
+ *         energy_resource_type_id:
+ *           type: integer
  *         delivery_date:
  *           type: string
  *           format: date
@@ -47,10 +48,10 @@ const {
  *         in: query
  *         schema:
  *           type: integer
- *       - name: resource_type
+ *       - name: energy_resource_type_id
  *         in: query
  *         schema:
- *           type: string
+ *           type: integer
  *       - name: delivery_date
  *         in: query
  *         schema:
@@ -62,6 +63,7 @@ const {
  */
 router.get(
   '/',
+  checkJwt,
   getResourceDeliveriesQueryValidation,
   handleValidationErrors,
   resourceDeliveryController.getAllResourceDeliveries
@@ -86,6 +88,7 @@ router.get(
  */
 router.get(
   '/:id',
+  checkJwt,
   getDeleteResourceDeliveryByIdValidation,
   handleValidationErrors,
   resourceDeliveryController.getResourceDeliveryById
@@ -108,6 +111,8 @@ router.get(
  */
 router.post(
   '/',
+  checkJwt,
+  checkRole('admin'),
   createResourceDeliveryValidation,
   handleValidationErrors,
   resourceDeliveryController.createResourceDelivery
@@ -138,6 +143,8 @@ router.post(
  */
 router.put(
   '/:id',
+  checkJwt,
+  checkRole('admin'),
   updateResourceDeliveryValidation,
   handleValidationErrors,
   resourceDeliveryController.updateResourceDelivery
@@ -162,6 +169,8 @@ router.put(
  */
 router.delete(
   '/:id',
+  checkJwt,
+  checkRole('admin'),
   getDeleteResourceDeliveryByIdValidation,
   handleValidationErrors,
   resourceDeliveryController.deleteResourceDelivery

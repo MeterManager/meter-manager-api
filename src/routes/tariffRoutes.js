@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const tariffController = require('../controllers/tariffController');
-const { 
+const {
   createTariffValidation,
   updateTariffValidation,
   getTariffByIdValidation,
   getTariffsQueryValidation,
-  handleValidationErrors
+  handleValidationErrors,
 } = require('../middlewares/tariffValidation');
+const { checkJwt, checkRole } = require('../middlewares/authMiddleware');
 
 /**
  * @swagger
@@ -69,11 +70,7 @@ const {
  *       200:
  *         description: Success
  */
-router.get('/',
-  getTariffsQueryValidation,
-  handleValidationErrors,
-  tariffController.getAllTariffs
-);
+router.get('/', checkJwt, getTariffsQueryValidation, handleValidationErrors, tariffController.getAllTariffs);
 
 /**
  * @swagger
@@ -92,11 +89,7 @@ router.get('/',
  *       404:
  *         description: Tariff not found
  */
-router.get('/:id',
-  getTariffByIdValidation,
-  handleValidationErrors,
-  tariffController.getTariffById
-);
+router.get('/:id', checkJwt, getTariffByIdValidation, handleValidationErrors, tariffController.getTariffById);
 
 /**
  * @swagger
@@ -134,7 +127,10 @@ router.get('/:id',
  *       409:
  *         description: Overlapping tariff period exists
  */
-router.post('/',
+router.post(
+  '/',
+  checkJwt,
+  checkRole('admin'),
   createTariffValidation,
   handleValidationErrors,
   tariffController.createTariff
@@ -179,7 +175,10 @@ router.post('/',
  *       409:
  *         description: Overlapping tariff period exists
  */
-router.put('/:id',
+router.put(
+  '/:id',
+  checkJwt,
+  checkRole('admin'),
   updateTariffValidation,
   handleValidationErrors,
   tariffController.updateTariff
@@ -204,7 +203,10 @@ router.put('/:id',
  *       404:
  *         description: Tariff not found
  */
-router.delete('/:id',
+router.delete(
+  '/:id',
+  checkJwt,
+  checkRole('admin'),
   getTariffByIdValidation,
   handleValidationErrors,
   tariffController.deleteTariff

@@ -8,6 +8,7 @@ const {
   getMetersQueryValidation,
   handleValidationErrors,
 } = require('../middlewares/meterValidation');
+const { checkJwt, checkRole } = require('../middlewares/authMiddleware');
 
 /**
  * @swagger
@@ -74,7 +75,7 @@ const {
  *                 count:
  *                   type: integer
  */
-router.get('/', getMetersQueryValidation, handleValidationErrors, meterController.getAllMeters);
+router.get('/', checkJwt, getMetersQueryValidation, handleValidationErrors, meterController.getAllMeters);
 
 /**
  * @swagger
@@ -93,7 +94,7 @@ router.get('/', getMetersQueryValidation, handleValidationErrors, meterControlle
  *       404:
  *         description: Meter not found
  */
-router.get('/:id', getMeterByIdValidation, handleValidationErrors, meterController.getMeterById);
+router.get('/:id', checkJwt, getMeterByIdValidation, handleValidationErrors, meterController.getMeterById);
 
 /**
  * @swagger
@@ -129,12 +130,21 @@ router.get('/:id', getMeterByIdValidation, handleValidationErrors, meterControll
  *       409:
  *         description: Meter with this serial number already exists
  */
-router.post('/', createMeterValidation, handleValidationErrors, meterController.createMeter);
+router.post(
+  '/',
+  checkJwt,
+  checkRole('admin'),
+  createMeterValidation,
+  handleValidationErrors,
+  meterController.createMeter
+);
 
 /**
  * @swagger
  * /api/meters/{id}:
  *   put:
+ *     summary: Update meter with cascade deactivation
+ *     description: Updates meter. When deactivating (is_active=false), all dependent meter tenants will be automatically deactivated.
  *     tags: [Meters]
  *     parameters:
  *       - name: id
@@ -162,19 +172,38 @@ router.post('/', createMeterValidation, handleValidationErrors, meterController.
  *                 type: boolean
  *     responses:
  *       200:
- *         description: Meter updated successfully
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Meter'
  *       404:
  *         description: Meter not found
  *       409:
  *         description: Serial number already exists
  */
-router.put('/:id', updateMeterValidation, handleValidationErrors, meterController.updateMeter);
+router.put(
+  '/:id',
+  checkJwt,
+  checkRole('admin'),
+  updateMeterValidation,
+  handleValidationErrors,
+  meterController.updateMeter
+);
 
 /**
  * @swagger
  * /api/meters/{id}:
  *   delete:
- *     description: Permanently deletes meter. Only inactive meters can be deleted.
+ *     summary: Delete meter with cascade deletion
+ *     description: Permanently deletes meter and ALL related data (meter tenants, deliveries). Only inactive meters can be deleted.
  *     tags: [Meters]
  *     parameters:
  *       - name: id
@@ -184,12 +213,64 @@ router.put('/:id', updateMeterValidation, handleValidationErrors, meterControlle
  *           type: integer
  *     responses:
  *       200:
- *         description: Meter deleted permanently
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
  *       400:
  *         description: Cannot delete active meter
  *       404:
  *         description: Meter not found
  */
-router.delete('/:id', getMeterByIdValidation, handleValidationErrors, meterController.deleteMeter);
+router.delete(
+  '/:id',
+  checkJwt,
+  checkRole('admin'),
+  getMeterByIdValidation,
+  handleValidationErrors,
+  meterController.deleteMeter
+);
+
+/**
+ * @swagger
+ * /api/meters/{id}/dependencies:
+ *   get:
+ *     description: Returns information about dependent objects (meter tenants, deliveries) for cascade deactivation warning
+ *     tags: [Meters]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     active_meter_tenants:
+ *                       type: integer
+ *                     deliveries:
+ *                       type: integer
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Meter not found
+ */
+router.get('/:id/dependencies', checkJwt, getMeterByIdValidation, handleValidationErrors, meterController.getMeterDependencies);
 
 module.exports = router;

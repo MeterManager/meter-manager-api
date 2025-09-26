@@ -1,4 +1,4 @@
-const { Meter, MeterTenant, Tenant, Location, EnergyResourceType } = require('../../models');
+const { Meter, MeterTenant, Tenant, Location, EnergyResourceType, sequelize } = require('../../models');
 const { Op } = require('sequelize');
 
 class MeterService {
@@ -30,6 +30,17 @@ class MeterService {
     });
     if (!meter) throw new Error('Meter not found');
     return meter;
+  }
+
+  async getMeterDependencies(id) {
+    const activeMeterTenants = await MeterTenant.count({
+      where: { meter_id: id, [Op.or]: [{ assigned_to: null }, { assigned_to: { [Op.gte]: new Date() } }] },
+    });
+
+    return {
+      active_meter_tenants: activeMeterTenants,
+      deliveries: 0,
+    };
   }
 
   async createMeter(meterData) {
@@ -81,6 +92,10 @@ class MeterService {
       if (!energyResourceType.is_active) throw new Error('Cannot update meter with inactive energy resource type');
     }
 
+    if (is_active === false && meter.is_active === true) {
+      await this.cascadeDeactivateMeter(id);
+    }
+
     return await meter.update({
       ...(serial_number && { serial_number }),
       ...(location_id && { location_id }),
@@ -89,38 +104,77 @@ class MeterService {
     });
   }
 
+  async cascadeDeactivateMeter(id) {
+    const transaction = await sequelize.transaction();
+    try {
+      const meterTenantsCount = await MeterTenant.count({
+        where: { meter_id: id, [Op.or]: [{ assigned_to: null }, { assigned_to: { [Op.gte]: new Date() } }] },
+      });
+
+      await MeterTenant.update(
+        { assigned_to: new Date() },
+        {
+          where: {
+            meter_id: id,
+            [Op.or]: [{ assigned_to: null }, { assigned_to: { [Op.gte]: new Date() } }],
+          },
+          transaction,
+        }
+      );
+
+      await transaction.commit();
+      return { deactivated_meter_tenants: meterTenantsCount };
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  }
+
   async deleteMeter(id) {
     const meter = await this.getMeterById(id);
-    
-    if (meter.is_active) {
-      throw new Error('Cannot delete active meter. Deactivate it first.');
-    }
-    await MeterTenant.destroy({ where: { meter_id: id } });
+    if (meter.is_active) throw new Error('Cannot delete active meter. Deactivate it first.');
+
+    await this.cascadeDeleteMeter(id);
     return await meter.destroy();
+  }
+
+  async cascadeDeleteMeter(id) {
+    const transaction = await sequelize.transaction();
+    try {
+      const meterTenantsCount = await MeterTenant.count({ where: { meter_id: id } });
+
+      await MeterTenant.destroy({ where: { meter_id: id }, transaction });
+
+      await transaction.commit();
+      return {
+        deleted_meter_tenants: meterTenantsCount,
+        deleted_deliveries: 0,
+      };
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   }
 
   async getAllMeterTenants(filters = {}) {
     const where = {};
     if (filters.meter_id) where.meter_id = filters.meter_id;
     if (filters.tenant_id) where.tenant_id = filters.tenant_id;
-    
+
     if (filters.active_only === 'true') {
-      where[Op.or] = [
-        { assigned_to: null },
-        { assigned_to: { [Op.gte]: new Date() } }
-      ];
+      where[Op.or] = [{ assigned_to: null }, { assigned_to: { [Op.gte]: new Date() } }];
     }
 
     return await MeterTenant.findAll({
       where,
       include: [
-        { 
-          model: Meter, 
+        {
+          model: Meter,
           as: 'Meter',
           include: [
             { model: Location, as: 'Location' },
-            { model: EnergyResourceType, as: 'EnergyResourceType' }
-          ]
+            { model: EnergyResourceType, as: 'EnergyResourceType' },
+          ],
         },
         { model: Tenant, as: 'Tenant' },
       ],
@@ -189,10 +243,7 @@ class MeterService {
           meter_id,
           tenant_id,
           id: { [Op.ne]: id },
-          [Op.or]: [
-            { assigned_to: null },
-            { assigned_to: { [Op.gte]: assigned_from || meterTenant.assigned_from } },
-          ],
+          [Op.or]: [{ assigned_to: null }, { assigned_to: { [Op.gte]: assigned_from || meterTenant.assigned_from } }],
         },
       });
       if (overlappingAssignment) throw new Error('Overlapping meter tenant assignment exists');
@@ -209,7 +260,6 @@ class MeterService {
   async deleteMeterTenant(id) {
     const meterTenant = await MeterTenant.findByPk(id);
     if (!meterTenant) throw new Error('Meter tenant assignment not found');
-    
     return await meterTenant.destroy();
   }
 }

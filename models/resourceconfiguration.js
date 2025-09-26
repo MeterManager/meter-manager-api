@@ -4,7 +4,6 @@ module.exports = (sequelize, DataTypes) => {
   class ResourceConfiguration extends Model {
     static associate(models) {
       this.hasMany(models.Resource, { foreignKey: 'resource_type', sourceKey: 'resource_type' });
-      this.hasMany(models.ResourceDelivery, { foreignKey: 'resource_type', sourceKey: 'resource_type' });
     }
   }
   ResourceConfiguration.init(

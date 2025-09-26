@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const meterController = require('../controllers/meterController'); // контролер, де є всі методи
+const meterController = require('../controllers/meterController');
 const {
   createMeterTenantValidation,
   getMeterTenantByIdValidation,
   getMeterTenantsQueryValidation,
   handleValidationErrors,
 } = require('../middlewares/meterValidation');
+const { checkJwt, checkRole } = require('../middlewares/authMiddleware');
 
 /**
  * @swagger
@@ -54,12 +55,7 @@ const {
  *       200:
  *         description: Success
  */
-router.get(
-  '/',
-  getMeterTenantsQueryValidation,
-  handleValidationErrors,
-  meterController.getAllMeterTenants
-);
+router.get('/', checkJwt, getMeterTenantsQueryValidation, handleValidationErrors, meterController.getAllMeterTenants);
 
 /**
  * @swagger
@@ -93,6 +89,8 @@ router.get(
  */
 router.post(
   '/',
+  checkJwt,
+  checkRole('admin'),
   createMeterTenantValidation,
   handleValidationErrors,
   meterController.createMeterTenant
@@ -138,6 +136,8 @@ router.post(
  */
 router.put(
   '/:id',
+  checkJwt,
+  checkRole('admin'),
   getMeterTenantByIdValidation,
   createMeterTenantValidation,
   handleValidationErrors,
@@ -163,6 +163,8 @@ router.put(
  */
 router.delete(
   '/:id',
+  checkJwt,
+  checkRole('admin'),
   getMeterTenantByIdValidation,
   handleValidationErrors,
   meterController.deleteMeterTenant

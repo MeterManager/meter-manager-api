@@ -8,6 +8,7 @@ const {
   getResourceTypesQueryValidation,
   handleValidationErrors,
 } = require('../middlewares/resourceTypeValidation');
+const { checkJwt, checkRole } = require('../middlewares/authMiddleware');
 
 /**
  * @swagger
@@ -46,7 +47,13 @@ const {
  *       200:
  *         description: Success
  */
-router.get('/', getResourceTypesQueryValidation, handleValidationErrors, resourceTypeController.getAllResourceTypes);
+router.get(
+  '/',
+  checkJwt,
+  getResourceTypesQueryValidation,
+  handleValidationErrors,
+  resourceTypeController.getAllResourceTypes
+);
 
 /**
  * @swagger
@@ -65,7 +72,13 @@ router.get('/', getResourceTypesQueryValidation, handleValidationErrors, resourc
  *       404:
  *         description: Not found
  */
-router.get('/:id', getResourceTypeByIdValidation, handleValidationErrors, resourceTypeController.getResourceTypeById);
+router.get(
+  '/:id',
+  checkJwt,
+  getResourceTypeByIdValidation,
+  handleValidationErrors,
+  resourceTypeController.getResourceTypeById
+);
 
 /**
  * @swagger
@@ -94,12 +107,20 @@ router.get('/:id', getResourceTypeByIdValidation, handleValidationErrors, resour
  *       409:
  *         description: Resource type already exists
  */
-router.post('/', createResourceTypeValidation, handleValidationErrors, resourceTypeController.createResourceType);
+router.post(
+  '/',
+  checkJwt,
+  checkRole('admin'),
+  createResourceTypeValidation,
+  handleValidationErrors,
+  resourceTypeController.createResourceType
+);
 
 /**
  * @swagger
  * /api/resource-types/{id}:
  *   put:
+ *     description: Updates resource type. When deactivating (is_active=false), all dependent meters will be automatically deactivated.
  *     tags: [Resource Types]
  *     parameters:
  *       - name: id
@@ -122,20 +143,37 @@ router.post('/', createResourceTypeValidation, handleValidationErrors, resourceT
  *                 type: boolean
  *     responses:
  *       200:
- *         description: Updated
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/ResourceType'
  *       404:
- *         description: Not found
+ *         description: Resource type not found
  *       409:
  *         description: Resource type already exists
  */
-router.put('/:id', updateResourceTypeValidation, handleValidationErrors, resourceTypeController.updateResourceType);
+router.put(
+  '/:id',
+  checkJwt,
+  checkRole('admin'),
+  updateResourceTypeValidation,
+  handleValidationErrors,
+  resourceTypeController.updateResourceType
+);
 
 /**
  * @swagger
  * /api/resource-types/{id}:
  *   delete:
- *     summary: Delete resource type (only inactive)
- *     description: Permanently deletes resource type. Only inactive resource types can be deleted.
+ *     description: Permanently deletes resource type and ALL related data (meters, deliveries). Only inactive resource types can be deleted.
  *     tags: [Resource Types]
  *     parameters:
  *       - name: id
@@ -145,12 +183,64 @@ router.put('/:id', updateResourceTypeValidation, handleValidationErrors, resourc
  *           type: integer
  *     responses:
  *       200:
- *         description: Resource type deleted permanently
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
  *       400:
  *         description: Cannot delete active resource type
  *       404:
  *         description: Resource type not found
  */
-router.delete('/:id', getResourceTypeByIdValidation, handleValidationErrors, resourceTypeController.deleteResourceType);
+router.delete(
+  '/:id',
+  checkJwt,
+  checkRole('admin'),
+  getResourceTypeByIdValidation,
+  handleValidationErrors,
+  resourceTypeController.deleteResourceType
+);
+
+/**
+ * @swagger
+ * /api/resource-types/{id}/dependencies:
+ *   get:
+ *     description: Returns information about dependent objects (meters, deliveries) for cascade deactivation warning
+ *     tags: [Resource Types]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     active_meters:
+ *                       type: integer
+ *                     deliveries:
+ *                       type: integer
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Resource type not found
+ */
+router.get('/:id/dependencies', checkJwt, getResourceTypeByIdValidation, handleValidationErrors, resourceTypeController.getResourceTypeDependencies);
 
 module.exports = router;

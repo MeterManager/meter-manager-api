@@ -8,22 +8,13 @@ const createMeterValidation = [
     .withMessage('Serial number is required')
     .isLength({ min: 1, max: 100 })
     .withMessage('Serial number must be between 1 and 100 characters'),
-  body('location_id')
-    .isInt({ min: 1 })
-    .withMessage('Location ID must be a positive integer'),
-  body('energy_resource_type_id')
-    .isInt({ min: 1 })
-    .withMessage('Energy resource type ID must be a positive integer'),
-  body('is_active')
-    .optional()
-    .isBoolean()
-    .withMessage('is_active must be a boolean value'),
+  body('location_id').isInt({ min: 1 }).withMessage('Location ID must be a positive integer'),
+  body('energy_resource_type_id').isInt({ min: 1 }).withMessage('Energy resource type ID must be a positive integer'),
+  body('is_active').optional().isBoolean().withMessage('is_active must be a boolean value'),
 ];
 
 const updateMeterValidation = [
-  param('id')
-    .isInt({ min: 1 })
-    .withMessage('Meter ID must be a positive integer'),
+  param('id').isInt({ min: 1 }).withMessage('Meter ID must be a positive integer'),
   body('serial_number')
     .optional()
     .trim()
@@ -31,40 +22,24 @@ const updateMeterValidation = [
     .withMessage('Serial number cannot be empty')
     .isLength({ min: 1, max: 100 })
     .withMessage('Serial number must be between 1 and 100 characters'),
-  body('location_id')
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage('Location ID must be a positive integer'),
+  body('location_id').optional().isInt({ min: 1 }).withMessage('Location ID must be a positive integer'),
   body('energy_resource_type_id')
     .optional()
     .isInt({ min: 1 })
     .withMessage('Energy resource type ID must be a positive integer'),
-  body('is_active')
-    .optional()
-    .isBoolean()
-    .withMessage('is_active must be a boolean value'),
+  body('is_active').optional().isBoolean().withMessage('is_active must be a boolean value'),
 ];
 
-const getMeterByIdValidation = [
-  param('id')
-    .isInt({ min: 1 })
-    .withMessage('Meter ID must be a positive integer'),
-];
+const getMeterByIdValidation = [param('id').isInt({ min: 1 }).withMessage('Meter ID must be a positive integer')];
 
 const getMetersQueryValidation = [
-  query('is_active')
-    .optional()
-    .isBoolean()
-    .withMessage('is_active must be a boolean value'),
+  query('is_active').optional().isBoolean().withMessage('is_active must be a boolean value'),
   query('serial_number')
     .optional()
     .trim()
     .isLength({ min: 1, max: 100 })
     .withMessage('Serial number filter must be between 1 and 100 characters'),
-  query('location_id')
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage('Location ID must be a positive integer'),
+  query('location_id').optional().isInt({ min: 1 }).withMessage('Location ID must be a positive integer'),
   query('energy_resource_type_id')
     .optional()
     .isInt({ min: 1 })
@@ -73,15 +48,9 @@ const getMetersQueryValidation = [
 
 // MeterTenant validations
 const createMeterTenantValidation = [
-  body('meter_id')
-    .isInt({ min: 1 })
-    .withMessage('Meter ID must be a positive integer'),
-  body('tenant_id')
-    .isInt({ min: 1 })
-    .withMessage('Tenant ID must be a positive integer'),
-  body('assigned_from')
-    .isISO8601()
-    .withMessage('Assigned from must be a valid date (YYYY-MM-DD)'),
+  body('meter_id').isInt({ min: 1 }).withMessage('Meter ID must be a positive integer'),
+  body('tenant_id').isInt({ min: 1 }).withMessage('Tenant ID must be a positive integer'),
+  body('assigned_from').isISO8601().withMessage('Assigned from must be a valid date (YYYY-MM-DD)'),
   body('assigned_to')
     .optional()
     .isISO8601()
@@ -97,24 +66,13 @@ const createMeterTenantValidation = [
 ];
 
 const getMeterTenantByIdValidation = [
-  param('id')
-    .isInt({ min: 1 })
-    .withMessage('Meter tenant ID must be a positive integer'),
+  param('id').isInt({ min: 1 }).withMessage('Meter tenant ID must be a positive integer'),
 ];
 
 const getMeterTenantsQueryValidation = [
-  query('meter_id')
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage('Meter ID must be a positive integer'),
-  query('tenant_id')
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage('Tenant ID must be a positive integer'),
-  query('active_only')
-    .optional()
-    .isBoolean()
-    .withMessage('active_only must be a boolean value'),
+  query('meter_id').optional().isInt({ min: 1 }).withMessage('Meter ID must be a positive integer'),
+  query('tenant_id').optional().isInt({ min: 1 }).withMessage('Tenant ID must be a positive integer'),
+  query('active_only').optional().isBoolean().withMessage('active_only must be a boolean value'),
 ];
 
 const handleValidationErrors = (req, res, next) => {
@@ -135,12 +93,12 @@ module.exports = {
   updateMeterValidation,
   getMeterByIdValidation,
   getMetersQueryValidation,
-  
+
   // MeterTenant validations
   createMeterTenantValidation,
   getMeterTenantByIdValidation,
   getMeterTenantsQueryValidation,
-  
+
   // Common
   handleValidationErrors,
 };

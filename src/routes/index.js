@@ -8,6 +8,8 @@ const tariffRoutes = require('./tariffRoutes');
 const tenantRoutes = require('./tenantRoutes');
 const meterRoutes = require('./meterRoutes');
 const meterTenantRoutes = require('./meterTenantRoutes');
+const userRoutes = require('./userRoutes');
+const authRoutes = require('./authRoutes');
 
 router.use('/locations', locationRoutes);
 router.use('/test', testRoute);
@@ -17,5 +19,7 @@ router.use('/tenants', tenantRoutes);
 router.use('/meters', meterRoutes);
 router.use('/meter-tenants', meterTenantRoutes);
 router.use('/resource-deliveries', resourceDeliveryRoutes);
+router.use('/users', userRoutes);
+router.use('/auth', authRoutes);
 
 module.exports = router;

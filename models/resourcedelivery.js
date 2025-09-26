@@ -4,13 +4,14 @@ module.exports = (sequelize, DataTypes) => {
   class ResourceDelivery extends Model {
     static associate(models) {
       this.belongsTo(models.Location, { foreignKey: 'location_id', as: 'location' });
-      this.belongsTo(models.ResourceConfiguration, { foreignKey: 'resource_type', targetKey: 'resource_type', as: 'resourceConfiguration' });
+      this.belongsTo(models.EnergyResourceType, { foreignKey: 'energy_resource_type_id', as: 'energyResourceType' });
     }
   }
+
   ResourceDelivery.init(
     {
       location_id: { type: DataTypes.INTEGER, allowNull: false },
-      resource_type: { type: DataTypes.STRING(50), allowNull: false },
+      energy_resource_type_id: { type: DataTypes.INTEGER, allowNull: false },
       delivery_date: { type: DataTypes.DATEONLY, allowNull: false },
       quantity: { type: DataTypes.DECIMAL(12, 4), allowNull: false },
       unit: { type: DataTypes.STRING(20), allowNull: false },

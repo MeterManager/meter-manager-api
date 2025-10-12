@@ -1,4 +1,4 @@
-const { Tenant, MeterTenant, Location, sequelize } = require('../../models');
+const { Tenant, MeterTenant, Location } = require('../../models');
 const { Op } = require('sequelize');
 
 class TenantService {
@@ -70,10 +70,6 @@ class TenantService {
       if (!location.is_active) throw new Error('Cannot update tenant with inactive location');
     }
 
-    if (is_active === false && tenant.is_active === true) {
-      await this.cascadeDeactivateTenant(id);
-    }
-
     return await tenant.update({
       ...(name && { name }),
       ...(location_id && { location_id }),
@@ -85,51 +81,12 @@ class TenantService {
     });
   }
 
-  async cascadeDeactivateTenant(id) {
-    const transaction = await sequelize.transaction();
-    try {
-      const meterTenantsCount = await MeterTenant.count({
-        where: { tenant_id: id, [Op.or]: [{ assigned_to: null }, { assigned_to: { [Op.gte]: new Date() } }] },
-      });
-
-      await MeterTenant.update(
-        { assigned_to: new Date() },
-        {
-          where: {
-            tenant_id: id,
-            [Op.or]: [{ assigned_to: null }, { assigned_to: { [Op.gte]: new Date() } }],
-          },
-          transaction,
-        }
-      );
-
-      await transaction.commit();
-      return { deactivated_meter_tenants: meterTenantsCount };
-    } catch (error) {
-      await transaction.rollback();
-      throw error;
-    }
-  }
-
   async deleteTenant(id) {
     const tenant = await this.getTenantById(id);
     if (tenant.is_active) throw new Error('Cannot delete active tenant. Deactivate it first.');
 
-    await this.cascadeDeleteTenant(id);
-    return await tenant.destroy();
-  }
-
-  async cascadeDeleteTenant(id) {
-    const transaction = await sequelize.transaction();
-    try {
-      const meterTenantsCount = await MeterTenant.count({ where: { tenant_id: id } });
-      await MeterTenant.destroy({ where: { tenant_id: id }, transaction });
-      await transaction.commit();
-      return { deleted_meter_tenants: meterTenantsCount };
-    } catch (error) {
-      await transaction.rollback();
-      throw error;
-    }
+    await tenant.destroy();
+    return { deleted: true };
   }
 }
 

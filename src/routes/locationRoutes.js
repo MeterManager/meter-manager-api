@@ -157,5 +157,7 @@ router.delete(
   handleValidationErrors,
   locationController.deleteLocation
 );
+//router.post( checkJwt, checkRole('admin'), '/:locationId/assign/:tenantId', locationController.assignTenant);
+//router.post( checkJwt, checkRole('admin'), '/:locationId/unassign', locationController.unassignTenant);
 
 module.exports = router;

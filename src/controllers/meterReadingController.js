@@ -43,26 +43,26 @@ const getReadingById = async (req, res) => {
 };
 
 const createReading = async (req, res) => {
-    try {
-      const reading = await meterReadingService.createReading(req.body);
-  
-      res.status(201).json({
-        success: true,
-        message: 'Meter reading created successfully',
-        data: reading,
-      });
-    } catch (error) {
-      const statusCode =
-        error.message.includes('already exists') || error.message.includes('not found')
-          ? 400
-          : 500;
-  
-      res.status(statusCode).json({
-        success: false,
-        message: error.message,
-      });
-    }
-  };
+  try {
+    const reading = await meterReadingService.createReading(req.body);
+
+    res.status(201).json({
+      success: true,
+      message: 'Meter reading created successfully',
+      data: reading,
+    });
+  } catch (error) {
+    const statusCode =
+      error.message.includes('already exists') || error.message.includes('not found')
+        ? 400
+        : 500;
+
+    res.status(statusCode).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
 const updateReading = async (req, res) => {
   try {
@@ -101,10 +101,29 @@ const deleteReading = async (req, res) => {
   }
 };
 
+const getReadingsSummary = async (req, res) => {
+  try {
+    const summary = await meterReadingService.getReadingsSummary(req.query);
+
+    res.json({
+      success: true,
+      message: 'Meter readings summary fetched successfully',
+      data: summary,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch readings summary',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAllReadings,
   getReadingById,
   createReading,
   updateReading,
   deleteReading,
+  getReadingsSummary, 
 };

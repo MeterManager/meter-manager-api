@@ -278,6 +278,7 @@ router.get(
   handleValidationErrors,
   meterReadingController.getAllReadings
 );
+router.get('/summary',checkJwt,checkRole('admin'), meterReadingController.getReadingsSummary);
 
 /**
  * @swagger
@@ -465,5 +466,7 @@ router.delete(
   handleValidationErrors,
   meterReadingController.generateAct
 );*/
+
+
 
 module.exports = router;

@@ -1,17 +1,17 @@
 'use strict';
 const { Model } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
   class Tenant extends Model {
     static associate(models) {
-      this.belongsTo(models.Location, { foreignKey: 'location_id' });
-      this.hasMany(models.MeterTenant, { foreignKey: 'tenant_id' });
+      this.hasMany(models.Location, { foreignKey: 'tenant_id', as: 'Locations' });
+      this.hasMany(models.MeterTenant, { foreignKey: 'tenant_id' }); 
     }
   }
+
   Tenant.init(
     {
       name: { type: DataTypes.STRING(255), allowNull: false },
-      location_id: { type: DataTypes.INTEGER, allowNull: false },
-      occupied_area: { type: DataTypes.DECIMAL(10, 2) },
       contact_person: { type: DataTypes.STRING(255) },
       phone: { type: DataTypes.STRING(50) },
       email: { type: DataTypes.STRING(255) },
@@ -25,5 +25,6 @@ module.exports = (sequelize, DataTypes) => {
       timestamps: false,
     }
   );
+
   return Tenant;
 };

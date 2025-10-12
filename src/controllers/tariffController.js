@@ -107,6 +107,28 @@ const deleteTariff = async (req, res) => {
     });
   }
 };
+const getApplicableTariff = async (req, res) => {
+  try {
+    const { location_id, energy_resource_type_id, reading_date } = req.query;
+
+    const tariff = await tariffService.getApplicableTariff(
+      location_id,
+      energy_resource_type_id,
+      reading_date
+    );
+
+    res.json({
+      success: true,
+      data: tariff,
+    });
+  } catch (error) {
+    res.status(404).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 
 module.exports = {
   getAllTariffs,
@@ -114,4 +136,5 @@ module.exports = {
   createTariff,
   updateTariff,
   deleteTariff,
+  getApplicableTariff
 };

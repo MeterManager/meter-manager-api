@@ -65,15 +65,10 @@ const getLocationDependencies = async (req, res) => {
 const createLocation = async (req, res) => {
   try {
     const location = await locationService.createLocation(req.body);
-
-    res.status(201).json({
-      success: true,
-      message: 'Location created successfully',
-      data: location,
-    });
+    res.status(201).json({ success: true, message: 'Location created successfully', data: location });
   } catch (error) {
-    const statusCode = error.message.includes('already exists') ? 409 : 500;
-    res.status(statusCode).json({
+    res.status(error.message.includes('Invalid tenant_id') ? 400 :
+               error.message.includes('already exists') ? 409 : 500).json({
       success: false,
       message: error.message,
     });
@@ -101,14 +96,9 @@ const updateLocation = async (req, res) => {
       data: location,
     });
   } catch (error) {
-    let statusCode = 500;
-    if (error.message === 'Location not found') {
-      statusCode = 404;
-    } else if (error.message.includes('already exists')) {
-      statusCode = 409;
-    }
-
-    res.status(statusCode).json({
+    res.status(error.message.includes('Invalid tenant_id') ? 400 :
+               error.message.includes('Location not found') ? 404 :
+               error.message.includes('already exists') ? 409 : 500).json({
       success: false,
       message: error.message,
     });
@@ -151,6 +141,44 @@ const deleteLocation = async (req, res) => {
     });
   }
 };
+const assignTenant = async (req, res) => {
+  try {
+    const { locationId, tenantId } = req.params;
+    const location = await locationService.assignTenant(locationId, tenantId);
+
+    res.json({
+      success: true,
+      message: `Location ${locationId} assigned to Tenant ${tenantId}`,
+      data: location,
+    });
+  } catch (error) {
+    const statusCode = error.message.includes('not found') ? 404 : 500;
+    res.status(statusCode).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+const unassignTenant = async (req, res) => {
+  try {
+    const { locationId } = req.params;
+    const location = await locationService.unassignTenant(locationId);
+
+    res.json({
+      success: true,
+      message: `Location ${locationId} unassigned from tenant`,
+      data: location,
+    });
+  } catch (error) {
+    const statusCode = error.message.includes('not found') ? 404 : 500;
+    res.status(statusCode).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 
 module.exports = {
   getAllLocations,
@@ -159,4 +187,6 @@ module.exports = {
   createLocation,
   updateLocation,
   deleteLocation,
+  assignTenant,
+  unassignTenant,
 };

@@ -137,6 +137,40 @@ class TariffService {
     const tariff = await this.getTariffById(id);
     return await tariff.destroy();
   }
-}
+  async getApplicableTariff(location_id, energy_resource_type_id, reading_date) {
+    if (!location_id || !energy_resource_type_id) {
+      throw new Error("Both location_id and energy_resource_type_id are required");
+    }
 
+    const date = new Date(reading_date);
+    if (isNaN(date)) {
+      throw new Error(`Invalid reading_date: ${reading_date}`);
+    }
+
+    const tariff = await Tariff.findOne({
+      where: {
+        location_id,
+        energy_resource_type_id,
+        valid_from: { [Op.lte]: date },
+        [Op.or]: [
+          { valid_to: { [Op.gte]: date } },
+          { valid_to: null },
+        ],
+      },
+      order: [['valid_from', 'DESC']],
+      include: [
+        { model: Location, attributes: ['id', 'name'] },
+        { model: EnergyResourceType, attributes: ['id', 'name', 'unit'] },
+      ],
+    });
+
+    if (!tariff) {
+      throw new Error(
+        `No applicable tariff found for location ${location_id}, resource ${energy_resource_type_id} on ${reading_date}`
+      );
+    }
+
+    return tariff;
+  }
+}
 module.exports = new TariffService();

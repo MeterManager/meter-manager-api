@@ -6,21 +6,40 @@ class TenantService {
     const where = {};
     if (filters.is_active !== undefined) where.is_active = filters.is_active;
     if (filters.name) where.name = { [Op.iLike]: `%${filters.name}%` };
-    if (filters.location_id) where.location_id = filters.location_id;
-
+  
     return await Tenant.findAll({
       where,
-      include: [{ model: MeterTenant, as: 'MeterTenants' }],
+      include: [
+        { model: MeterTenant, as: 'MeterTenants' },
+        { 
+          model: Location, 
+          as: 'Locations',
+          attributes: ['id', 'name', 'occupied_area'] 
+        }
+      ],
       order: [['created_at', 'DESC']],
     });
   }
-
+  
   async getTenantById(id) {
-    const tenant = await Tenant.findByPk(id, {
-      include: [{ model: MeterTenant, as: 'MeterTenants' }],
+    return await Tenant.findByPk(id, {
+      include: [
+        { model: MeterTenant, as: 'MeterTenants' },
+        { 
+          model: Location, 
+          as: 'Locations',
+          attributes: ['id', 'name', 'occupied_area'] // ✅ площа тут
+        }
+      ],
     });
-    if (!tenant) throw new Error('Tenant not found');
-    return tenant;
+  }
+  
+  async getSimpleTenants() {
+    return await Tenant.findAll({
+      attributes: ['id', 'name'], 
+      where: { is_active: true },
+      order: [['name', 'ASC']],
+    });
   }
 
   async getTenantDependencies(id) {
@@ -31,62 +50,68 @@ class TenantService {
   }
 
   async createTenant(tenantData) {
-    const { name, location_id, occupied_area, contact_person, phone, email, is_active = true } = tenantData;
-
-    const existingTenant = await Tenant.findOne({ where: { name } });
-    if (existingTenant) throw new Error('Tenant with this name already exists');
-
-    if (location_id) {
-      const location = await Location.findByPk(location_id);
-      if (!location) throw new Error('Location not found');
-      if (!location.is_active) throw new Error('Cannot create tenant with inactive location');
-    }
-
-    return await Tenant.create({
+    const { name, location_ids = [], contact_person, phone, email, is_active = true } = tenantData;
+  
+    const tenant = await Tenant.create({
       name,
-      location_id,
-      occupied_area,
       contact_person,
       phone,
       email,
       is_active,
     });
+  
+    if (Array.isArray(location_ids) && location_ids.length > 0) {
+      await Promise.all(location_ids.map(id => 
+        Location.update(
+          { tenant_id: tenant.id },
+          { where: { id } }
+        )
+      ));
+    }
+  
+    return await this.getTenantById(tenant.id); 
   }
-
+  
   async updateTenant(id, updateData) {
     const tenant = await this.getTenantById(id);
-    const { name, location_id, occupied_area, contact_person, phone, email, is_active } = updateData;
-
-    if (name && name !== tenant.name) {
-      const existingTenant = await Tenant.findOne({
-        where: { name, id: { [Op.ne]: id } },
-      });
-      if (existingTenant) throw new Error('Tenant with this name already exists');
-    }
-
-    if (location_id && location_id !== tenant.location_id) {
-      const location = await Location.findByPk(location_id);
-      if (!location) throw new Error('Location not found');
-      if (!location.is_active) throw new Error('Cannot update tenant with inactive location');
-    }
-
-    return await tenant.update({
+    const { name, location_ids, contact_person, phone, email, is_active } = updateData;
+    await tenant.update({
       ...(name && { name }),
-      ...(location_id && { location_id }),
-      ...(occupied_area !== undefined && { occupied_area }),
       ...(contact_person !== undefined && { contact_person }),
       ...(phone !== undefined && { phone }),
       ...(email !== undefined && { email }),
       ...(is_active !== undefined && { is_active }),
     });
+
+    if (Array.isArray(location_ids)) {
+      await Location.update(
+        { tenant_id: null, occupied_area: null },
+        { where: { tenant_id: tenant.id } }
+      );
+  
+      await Promise.all(location_ids.map(id => 
+        Location.update(
+          { tenant_id: tenant.id },
+          { where: { id } }
+        )
+      ));
+    }
+  
+    await tenant.reload({ 
+      include: [
+        { model: Location, as: 'Locations', attributes: ['id', 'name', 'occupied_area'] },
+        { model: MeterTenant, as: 'MeterTenants' }
+      ]
+    });
+  
+    return tenant;
   }
 
   async deleteTenant(id) {
     const tenant = await this.getTenantById(id);
     if (tenant.is_active) throw new Error('Cannot delete active tenant. Deactivate it first.');
-
-    await tenant.destroy();
-    return { deleted: true };
+    await MeterTenant.destroy({ where: { tenant_id: id } });
+    return await tenant.destroy();
   }
 }
 

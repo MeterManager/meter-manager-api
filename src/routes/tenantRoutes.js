@@ -7,7 +7,7 @@ const {
   getTenantByIdValidation,
   getTenantsQueryValidation,
   handleValidationErrors,
-} = require('../middlewares/TenantValidation');
+} = require('../middlewares/tenantValidation');
 const { checkJwt, checkRole } = require('../middlewares/authMiddleware');
 
 /**
@@ -66,6 +66,9 @@ router.get('/', checkJwt, getTenantsQueryValidation, handleValidationErrors, ten
  *       404:
  *         description: Not found
  */
+
+router.get('/simple', checkJwt, checkRole('admin'), tenantController.getSimpleTenants);
+
 router.get('/:id', checkJwt, getTenantByIdValidation, handleValidationErrors, tenantController.getTenantById);
 
 /**
@@ -208,6 +211,10 @@ router.delete(
   handleValidationErrors,
   tenantController.deleteTenant
 );
+//router.post(  checkJwt, checkRole('admin'), '/:tenantId/locations/:locationId', tenantController.assignLocationToTenant);
+//router.delete(  checkJwt, checkRole('admin'), '/:tenantId/locations/:locationId', tenantController.unassignLocationFromTenant);
+
+
 
 /**
  * @swagger

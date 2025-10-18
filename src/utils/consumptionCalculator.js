@@ -17,36 +17,54 @@ class ConsumptionCalculator {
     return consumption;
   }
 
-  // Прямий метод (тільки різниця між показниками)
-  static calculateDirect(consumption) {
+  // Прямий метод — множимо на коефіцієнт
+  static calculateDirect(consumption, calculationCoefficient = 1, areaPercentOrSize = 100) {
+    const adjusted =
+      parseFloat(consumption) *
+      parseFloat(calculationCoefficient) *
+      (parseFloat(areaPercentOrSize) / 100);
+  
     return {
-      direct_consumption: parseFloat(consumption),
+      direct_consumption: adjusted,
       area_based_consumption: 0,
-      total_consumption: parseFloat(consumption),
+      total_consumption: adjusted,
     };
   }
-
-
-   //Метод "за площею" (наприклад, беремо тільки areaBasedConsumption)
-  static calculateAreaBased(areaBasedConsumption) {
+  
+  // Метод "за площею"
+  static calculateAreaBased(areaValue, energyCoefficient = 1, areaPercentOrSize = 100) {
+    const adjusted =
+      parseFloat(areaValue) *
+      parseFloat(energyCoefficient) *
+      (parseFloat(areaPercentOrSize) / 100);
+  
     return {
       direct_consumption: 0,
-      area_based_consumption: parseFloat(areaBasedConsumption),
-      total_consumption: parseFloat(areaBasedConsumption),
+      area_based_consumption: adjusted,
+      total_consumption: adjusted,
     };
-  }
+  }  
 
-  //Змішаний метод (поєднання)
-  static calculateMixed(consumption, areaBasedConsumption) {
-    const direct = parseFloat(consumption) || 0;
-    const area = parseFloat(areaBasedConsumption) || 0;
-
+  //Змішаний метод
+  static calculateMixed(consumption, areaValue, calcCoeff = 1, energyCoeff = 1, areaPercentOrSize = 100) {
+    const directPart =
+      parseFloat(consumption) *
+      parseFloat(calcCoeff) *
+      (parseFloat(areaPercentOrSize) / 100);
+  
+    const areaPart =
+      parseFloat(areaValue) *
+      parseFloat(energyCoeff) *
+      (parseFloat(areaPercentOrSize) / 100);
+  
+    const total = directPart + areaPart;
+  
     return {
-      direct_consumption: direct,
-      area_based_consumption: area,
-      total_consumption: direct + area,
+      direct_consumption: directPart,
+      area_based_consumption: areaPart,
+      total_consumption: total,
     };
-  }
+  }  
 
   //Розрахунок total cost
   static calculateTotalCost(totalConsumption, unitPrice) {

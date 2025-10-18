@@ -1,4 +1,5 @@
 const tenantService = require('../services/tenantService');
+const locationService = require('../services/locationService'); 
 
 const getAllTenants = async (req, res) => {
   try {
@@ -49,8 +50,7 @@ const createTenant = async (req, res) => {
       data: tenant,
     });
   } catch (error) {
-    const statusCode = error.message.includes('already exists') ? 409 : 500;
-    res.status(statusCode).json({
+    res.status().json({
       success: false,
       message: error.message,
     });
@@ -94,10 +94,69 @@ const deleteTenant = async (req, res) => {
   }
 };
 
+
+const assignLocationToTenant = async (req, res) => {
+  try {
+    const { tenantId, locationId } = req.params;
+    const location = await locationService.assignTenant(locationId, tenantId);
+
+    res.json({
+      success: true,
+      message: `Location ${locationId} assigned to Tenant ${tenantId}`,
+      data: location,
+    });
+  } catch (error) {
+    const statusCode = error.message.includes('not found') ? 404 : 500;
+    res.status(statusCode).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+const unassignLocationFromTenant = async (req, res) => {
+  try {
+    const { tenantId, locationId } = req.params;
+    const location = await locationService.unassignTenant(locationId);
+
+    res.json({
+      success: true,
+      message: `Location ${locationId} unassigned from Tenant ${tenantId}`,
+      data: location,
+    });
+  } catch (error) {
+    const statusCode = error.message.includes('not found') ? 404 : 500;
+    res.status(statusCode).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+const getSimpleTenants = async (req, res) => {
+  try {
+    const tenants = await tenantService.getSimpleTenants();
+    res.json({
+      success: true,
+      data: tenants,
+      count: tenants.length,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch simple tenants',
+      error: error.message,
+    });
+  }
+};
+
+
 module.exports = {
   getAllTenants,
   getTenantById,
   createTenant,
   updateTenant,
   deleteTenant,
+  assignLocationToTenant,
+  unassignLocationFromTenant,
+  getSimpleTenants
 };

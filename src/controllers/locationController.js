@@ -41,6 +41,27 @@ const getLocationById = async (req, res) => {
   }
 };
 
+const getLocationDependencies = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const dependencies = await locationService.getLocationDependencies(id);
+    
+    res.json({
+      success: true,
+      data: dependencies,
+      message: dependencies.active_meters > 0 
+        ? `This location has ${dependencies.active_meters} active meters that will be deactivated`
+        : 'No active dependent objects'
+    });
+  } catch (error) {
+    const statusCode = error.message === 'Location not found' ? 404 : 500;
+    res.status(statusCode).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 const createLocation = async (req, res) => {
   try {
     const location = await locationService.createLocation(req.body);
@@ -92,6 +113,16 @@ const assignTenant = async (req, res) => {
     const { locationId, tenantId } = req.params;
     const location = await locationService.assignTenant(locationId, tenantId);
 
+    let message = 'Location updated successfully';
+    if (req.body.is_active === false) {
+      const dependencies = await locationService.getLocationDependencies(id);
+      if (dependencies.active_meters === 0 && dependencies.deliveries === 0) {
+        message += ' (no dependent objects affected)';
+      } else {
+        message += ` (deactivated ${dependencies.active_meters || 0} meters)`;
+      }
+    }
+
     res.json({
       success: true,
       message: `Location ${locationId} assigned to Tenant ${tenantId}`,
@@ -110,8 +141,7 @@ const unassignTenant = async (req, res) => {
   try {
     const { locationId } = req.params;
     const location = await locationService.unassignTenant(locationId);
-
-    res.json({
+res.json({
       success: true,
       message: `Location ${locationId} unassigned from tenant`,
       data: location,
@@ -129,9 +159,11 @@ const unassignTenant = async (req, res) => {
 module.exports = {
   getAllLocations,
   getLocationById,
+  getLocationDependencies,
   createLocation,
   updateLocation,
   deleteLocation,
   assignTenant,
   unassignTenant,
 };
+

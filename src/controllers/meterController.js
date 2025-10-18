@@ -41,6 +41,28 @@ const getMeterById = async (req, res) => {
   }
 };
 
+const getMeterDependencies = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const dependencies = await meterService.getMeterDependencies(id);
+
+    res.json({
+      success: true,
+      data: dependencies,
+      message:
+        dependencies.active_meter_tenants > 0 || dependencies.deliveries > 0
+          ? `This meter has ${dependencies.active_meter_tenants} active meter tenants and ${dependencies.deliveries} deliveries that will be affected`
+          : 'No active dependent objects',
+    });
+  } catch (error) {
+    const statusCode = error.message === 'Meter not found' ? 404 : 500;
+    res.status(statusCode).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 const createMeter = async (req, res) => {
   try {
     const meter = await meterService.createMeter(req.body);
@@ -62,9 +84,20 @@ const updateMeter = async (req, res) => {
   try {
     const { id } = req.params;
     const meter = await meterService.updateMeter(id, req.body);
+
+    let message = 'Meter updated successfully';
+    if (req.body.is_active === false) {
+      const dependencies = await meterService.getMeterDependencies(id);
+      if (dependencies.active_meter_tenants === 0) {
+        message += ' (no dependent objects affected)';
+      } else {
+        message += ` (deactivated ${dependencies.active_meter_tenants} meter tenants)`;
+      }
+    }
+
     res.json({
       success: true,
-      message: 'Meter updated successfully',
+      message: message,
       data: meter,
     });
   } catch (error) {
@@ -79,10 +112,18 @@ const updateMeter = async (req, res) => {
 const deleteMeter = async (req, res) => {
   try {
     const { id } = req.params;
+    const dependencies = await meterService.getMeterDependencies(id);
     await meterService.deleteMeter(id);
+
+    let message = 'Meter deleted permanently';
+    const deletedItems = [];
+    if (dependencies.active_meter_tenants > 0) deletedItems.push(`${dependencies.active_meter_tenants} meter tenants`);
+    if (dependencies.deliveries > 0) deletedItems.push(`${dependencies.deliveries} deliveries`);
+    if (deletedItems.length > 0) message += ` (also deleted: ${deletedItems.join(', ')})`;
+
     res.json({
       success: true,
-      message: 'Meter deleted permanently',
+      message: message,
     });
   } catch (error) {
     const statusCode =
@@ -130,8 +171,8 @@ const createMeterTenant = async (req, res) => {
       error.message.includes('already assigned') || error.message.includes('overlap')
         ? 409
         : error.message.includes('not found')
-          ? 404
-          : 500;
+        ? 404
+        : 500;
     res.status(statusCode).json({
       success: false,
       message: error.message,
@@ -169,10 +210,10 @@ const updateMeterTenant = async (req, res) => {
     const statusCode = error.message.includes('not found')
       ? 404
       : error.message.includes('inactive')
-        ? 400
-        : error.message.includes('overlap')
-          ? 409
-          : 500;
+      ? 400
+      : error.message.includes('overlap')
+      ? 409
+      : 500;
     res.status(statusCode).json({
       success: false,
       message: error.message,
@@ -183,6 +224,7 @@ const updateMeterTenant = async (req, res) => {
 module.exports = {
   getAllMeters,
   getMeterById,
+  getMeterDependencies,
   createMeter,
   updateMeter,
   deleteMeter,

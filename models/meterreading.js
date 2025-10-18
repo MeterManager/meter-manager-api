@@ -5,6 +5,10 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       this.belongsTo(models.MeterTenant, { foreignKey: 'meter_tenant_id' });
       this.belongsTo(models.User, { foreignKey: 'created_by' });
+      this.hasMany(models.MeterReadingDistribution, {
+        foreignKey: 'meter_reading_id',
+        as: 'distributions',
+      });
     }
   }
   MeterReading.init(

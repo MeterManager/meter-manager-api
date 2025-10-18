@@ -3,7 +3,7 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class MeterReading extends Model {
     static associate(models) {
-      this.belongsTo(models.MeterTenant, { foreignKey: 'meter_tenant_id' });
+      this.belongsTo(models.MeterTenant, { as: 'MeterTenant', foreignKey: 'meter_tenant_id' });
       this.belongsTo(models.User, { foreignKey: 'created_by' });
       this.hasMany(models.MeterReadingDistribution, {
         foreignKey: 'meter_reading_id',
@@ -27,26 +27,26 @@ module.exports = (sequelize, DataTypes) => {
       calculation_coefficient: {
         type: DataTypes.DECIMAL(8, 4),
         allowNull: true,
-        defaultValue: 1.0000,
-        comment: "Коефіцієнт для розрахунків",
+        defaultValue: 1.0,
+        comment: 'Коефіцієнт для розрахунків',
       },
       energy_consumption_coefficient: {
         type: DataTypes.DECIMAL(8, 4),
         allowNull: true,
-        defaultValue: 1.0000,
-        comment: "Розрахунковий коефіцієнт споживання електроенергії",
+        defaultValue: 1.0,
+        comment: 'Розрахунковий коефіцієнт споживання електроенергії',
       },
       rental_area: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: true,
         defaultValue: 0,
-        comment: "Орендована площа, кв.м",
+        comment: 'Орендована площа, кв.м',
       },
       total_rented_area_percentage: {
         type: DataTypes.DECIMAL(5, 2),
         allowNull: true,
         defaultValue: 0,
-        comment: "Відсоток орендованої площі",
+        comment: 'Відсоток орендованої площі',
       },
       notes: { type: DataTypes.TEXT },
       act_number: { type: DataTypes.STRING(100) },

@@ -3,9 +3,8 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class MeterTenant extends Model {
     static associate(models) {
-      this.belongsTo(models.Tenant, { foreignKey: 'tenant_id' });
-      this.belongsTo(models.Meter, { foreignKey: 'meter_id' });
-      this.hasMany(models.MeterReading, { foreignKey: 'meter_tenant_id' });
+      this.belongsTo(models.Tenant, { as: 'Tenant', foreignKey: 'tenant_id' });
+      this.belongsTo(models.Meter, { as: 'Meter', foreignKey: 'meter_id' });
     }
   }
   MeterTenant.init(

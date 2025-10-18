@@ -1,22 +1,25 @@
-const { MeterTenant, Tenant, Meter, Location,EnergyResourceType } = require('../../models');
+const { MeterTenant, Tenant, Meter, Location, EnergyResourceType } = require('../../models');
 const { Op } = require('sequelize');
 
 class MeterTenantService {
   async getAllMeterTenants(filters = {}) {
     const where = {};
+
     if (filters.tenant_id) {
       where.tenant_id = filters.tenant_id;
     }
+
     if (filters.meter_id) {
       where.meter_id = filters.meter_id;
     }
+
+    // Fixed: Properly filter for overlapping date ranges
     if (filters.assigned_from || filters.assigned_to) {
-      where.assigned_from = {
-        [Op.between]: [
-          filters.assigned_from || '1900-01-01',
-          filters.assigned_to || new Date(),
-        ],
-      };
+      const from = filters.assigned_from || '1900-01-01';
+      const to = filters.assigned_to || new Date().toISOString().split('T')[0];
+
+      where.assigned_from = { [Op.lte]: to };
+      where[Op.or] = [{ assigned_to: null }, { assigned_to: { [Op.gte]: from } }];
     }
 
     return await MeterTenant.findAll({
@@ -24,43 +27,54 @@ class MeterTenantService {
       include: [
         {
           model: Tenant,
+          as: 'Tenant',
           attributes: ['id', 'name', 'phone', 'email'],
         },
         {
           model: Meter,
+          as: 'Meter',
           attributes: ['id', 'serial_number', 'energy_resource_type_id', 'location_id'],
-         
           include: [
             {
               model: EnergyResourceType,
+              as: 'EnergyResourceType',
               attributes: ['id', 'name'],
             },
             {
               model: Location,
+              as: 'Location',
               attributes: ['id', 'name', 'address'],
-            }
+            },
           ],
         },
       ],
+      order: [['assigned_from', 'DESC']],
     });
   }
 
   async getMeterTenantById(id) {
     const meterTenant = await MeterTenant.findByPk(id, {
       include: [
-        { model: Tenant, attributes: ['id', 'name'] },
-        { 
-          model: Meter, 
-          attributes: ['id', 'serial_number', 'location_id', 'energy_resource_type_id'], 
+        {
+          model: Tenant,
+          as: 'Tenant',
+          attributes: ['id', 'name', 'phone', 'email'],
+        },
+        {
+          model: Meter,
+          as: 'Meter',
+          attributes: ['id', 'serial_number', 'location_id', 'energy_resource_type_id'],
           include: [
             {
               model: EnergyResourceType,
+              as: 'EnergyResourceType',
               attributes: ['id', 'name'],
             },
             {
               model: Location,
+              as: 'Location',
               attributes: ['id', 'name', 'address'],
-            }
+            },
           ],
         },
       ],
@@ -72,22 +86,41 @@ class MeterTenantService {
     return meterTenant;
   }
 
+  // Fixed: Improved overlap detection logic
+  async checkOverlap(tenant_id, meter_id, assigned_from, assigned_to, excludeId = null) {
+    const maxDate = '2099-12-31';
+    const endDate = assigned_to || maxDate;
+
+    const where = {
+      tenant_id,
+      meter_id,
+      assigned_from: { [Op.lte]: endDate },
+      [Op.or]: [{ assigned_to: null }, { assigned_to: { [Op.gte]: assigned_from } }],
+    };
+
+    // Exclude current record when updating
+    if (excludeId) {
+      where.id = { [Op.ne]: excludeId };
+    }
+
+    return await MeterTenant.findOne({ where });
+  }
+
   async createMeterTenant(data) {
     const { tenant_id, meter_id, assigned_from, assigned_to } = data;
 
-    const existing = await MeterTenant.findOne({
-      where: {
-        tenant_id,
-        meter_id,
-        [Op.or]: [
-          { assigned_to: null },
-          {
-            assigned_from: { [Op.lte]: assigned_to || new Date() },
-            assigned_to: { [Op.gte]: assigned_from },
-          },
-        ],
-      },
-    });
+    // Validate required fields
+    if (!tenant_id || !meter_id || !assigned_from) {
+      throw new Error('tenant_id, meter_id, and assigned_from are required');
+    }
+
+    // Validate date logic
+    if (assigned_to && new Date(assigned_from) > new Date(assigned_to)) {
+      throw new Error('assigned_from cannot be later than assigned_to');
+    }
+
+    // Check for overlapping assignments
+    const existing = await this.checkOverlap(tenant_id, meter_id, assigned_from, assigned_to);
 
     if (existing) {
       throw new Error('This meter is already assigned to the tenant for the given period');
@@ -104,19 +137,92 @@ class MeterTenantService {
   async updateMeterTenant(id, updateData) {
     const meterTenant = await this.getMeterTenantById(id);
 
-    return await meterTenant.update({
-      ...(updateData.tenant_id && { tenant_id: updateData.tenant_id }),
-      ...(updateData.meter_id && { meter_id: updateData.meter_id }),
-      ...(updateData.assigned_from && { assigned_from: updateData.assigned_from }),
-      ...(updateData.assigned_to !== undefined && { assigned_to: updateData.assigned_to }),
-    });
+    // Prepare update fields
+    const updates = {};
+
+    if (updateData.tenant_id !== undefined) {
+      updates.tenant_id = updateData.tenant_id;
+    }
+    if (updateData.meter_id !== undefined) {
+      updates.meter_id = updateData.meter_id;
+    }
+    if (updateData.assigned_from !== undefined) {
+      updates.assigned_from = updateData.assigned_from;
+    }
+    if (updateData.assigned_to !== undefined) {
+      updates.assigned_to = updateData.assigned_to;
+    }
+
+    // Use updated or existing values for validation
+    const tenant_id = updates.tenant_id ?? meterTenant.tenant_id;
+    const meter_id = updates.meter_id ?? meterTenant.meter_id;
+    const assigned_from = updates.assigned_from ?? meterTenant.assigned_from;
+    const assigned_to = updates.assigned_to !== undefined ? updates.assigned_to : meterTenant.assigned_to;
+
+    // Validate date logic
+    if (assigned_to && new Date(assigned_from) > new Date(assigned_to)) {
+      throw new Error('assigned_from cannot be later than assigned_to');
+    }
+
+    // Check for overlapping assignments (excluding current record)
+    const existing = await this.checkOverlap(tenant_id, meter_id, assigned_from, assigned_to, id);
+
+    if (existing) {
+      throw new Error('This meter is already assigned to the tenant for the given period');
+    }
+
+    return await meterTenant.update(updates);
   }
 
   async deleteMeterTenant(id) {
     const meterTenant = await this.getMeterTenantById(id);
     return await meterTenant.destroy();
   }
+
+  // Helper method to get active assignments for a meter
+  async getActiveMeterAssignments(meter_id, date = new Date()) {
+    return await MeterTenant.findAll({
+      where: {
+        meter_id,
+        assigned_from: { [Op.lte]: date },
+        [Op.or]: [{ assigned_to: null }, { assigned_to: { [Op.gte]: date } }],
+      },
+      include: [
+        {
+          model: Tenant,
+          as: 'Tenant',
+          attributes: ['id', 'name', 'phone', 'email'],
+        },
+      ],
+    });
+  }
+
+  // Helper method to get tenant's meter history
+  async getTenantMeterHistory(tenant_id) {
+    return await MeterTenant.findAll({
+      where: { tenant_id },
+      include: [
+        {
+          model: Meter,
+          as: 'Meter',
+          attributes: ['id', 'serial_number', 'energy_resource_type_id', 'location_id'],
+          include: [
+            {
+              model: EnergyResourceType,
+              as: 'EnergyResourceType',
+              attributes: ['id', 'name'],
+            },
+            {
+              model: Location,
+              as: 'Location',
+              attributes: ['id', 'name', 'address'],
+            },
+          ],
+        },
+      ],
+      order: [['assigned_from', 'DESC']],
+    });
+  }
 }
 
 module.exports = new MeterTenantService();
-

@@ -4,8 +4,8 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class Tenant extends Model {
     static associate(models) {
-      this.hasMany(models.Location, { foreignKey: 'tenant_id', as: 'Locations' });
-      this.hasMany(models.MeterTenant, { foreignKey: 'tenant_id' }); 
+      this.hasMany(models.Location, { as: 'Locations', foreignKey: 'tenant_id' }); // ✅ hasMany with plural
+      this.hasMany(models.MeterTenant, { as: 'MeterTenants', foreignKey: 'tenant_id' }); // ✅ Added alias
     }
   }
 

@@ -4,9 +4,8 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class Location extends Model {
     static associate(models) {
-      this.belongsTo(models.Tenant, { foreignKey: 'tenant_id', as: 'Tenant' });
-      this.hasMany(models.Meter, { foreignKey: 'location_id' });
-      this.hasMany(models.Tariff, { foreignKey: 'location_id' });
+      this.hasMany(models.Meter, { as: 'Meters', foreignKey: 'location_id' });
+      this.belongsTo(models.Tenant, { as: 'Tenant', foreignKey: 'tenant_id' }); // ← Must say belongsTo
       this.hasMany(models.Resource, { foreignKey: 'location_id' });
       this.hasMany(models.ResourceDelivery, { foreignKey: 'location_id' });
     }
@@ -16,7 +15,6 @@ module.exports = (sequelize, DataTypes) => {
     {
       name: { type: DataTypes.STRING(255), allowNull: false },
       address: { type: DataTypes.TEXT, allowNull: true },
-
       tenant_id: {         
         type: DataTypes.INTEGER,
         allowNull: true,  
@@ -25,7 +23,6 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: true,
       },
-
       is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
       created_at: { type: DataTypes.DATE, defaultValue: sequelize.literal('CURRENT_TIMESTAMP') },
     },

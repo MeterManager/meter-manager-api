@@ -1,5 +1,4 @@
 const meterReadingService = require('../services/meterReadingService');
-
 const getAllReadings = async (req, res) => {
   try {
     const filters = {
@@ -10,12 +9,18 @@ const getAllReadings = async (req, res) => {
 
     const readings = await meterReadingService.getAllReadings(filters);
 
+    // Convert Sequelize instances to plain objects
+    const plainReadings = Array.isArray(readings) 
+      ? readings.map(r => r.toJSON ? r.toJSON() : r)
+      : readings;
+
     res.json({
       success: true,
-      data: readings,
-      count: readings.length,
+      data: plainReadings,
+      count: plainReadings.length,
     });
   } catch (error) {
+    console.error('Error in getAllReadings controller:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch meter readings',

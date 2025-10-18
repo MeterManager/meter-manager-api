@@ -4,25 +4,22 @@ const { Op } = require('sequelize');
 class MeterTenantService {
   async getAllMeterTenants(filters = {}) {
     const where = {};
-    
+
     if (filters.tenant_id) {
       where.tenant_id = filters.tenant_id;
     }
-    
+
     if (filters.meter_id) {
       where.meter_id = filters.meter_id;
     }
-    
+
     // Fixed: Properly filter for overlapping date ranges
     if (filters.assigned_from || filters.assigned_to) {
       const from = filters.assigned_from || '1900-01-01';
       const to = filters.assigned_to || new Date().toISOString().split('T')[0];
-      
+
       where.assigned_from = { [Op.lte]: to };
-      where[Op.or] = [
-        { assigned_to: null },
-        { assigned_to: { [Op.gte]: from } }
-      ];
+      where[Op.or] = [{ assigned_to: null }, { assigned_to: { [Op.gte]: from } }];
     }
 
     return await MeterTenant.findAll({
@@ -30,10 +27,12 @@ class MeterTenantService {
       include: [
         {
           model: Tenant,
+          as: 'Tenant',
           attributes: ['id', 'name', 'phone', 'email'],
         },
         {
           model: Meter,
+          as: 'Meter',
           attributes: ['id', 'serial_number', 'energy_resource_type_id', 'location_id'],
           include: [
             {
@@ -45,24 +44,26 @@ class MeterTenantService {
               model: Location,
               as: 'Location',
               attributes: ['id', 'name', 'address'],
-            }
+            },
           ],
         },
       ],
-      order: [['assigned_from', 'DESC']]
+      order: [['assigned_from', 'DESC']],
     });
   }
 
   async getMeterTenantById(id) {
     const meterTenant = await MeterTenant.findByPk(id, {
       include: [
-        { 
-          model: Tenant, 
-          attributes: ['id', 'name', 'phone', 'email'] 
+        {
+          model: Tenant,
+          as: 'Tenant',
+          attributes: ['id', 'name', 'phone', 'email'],
         },
-        { 
-          model: Meter, 
-          attributes: ['id', 'serial_number', 'location_id', 'energy_resource_type_id'], 
+        {
+          model: Meter,
+          as: 'Meter',
+          attributes: ['id', 'serial_number', 'location_id', 'energy_resource_type_id'],
           include: [
             {
               model: EnergyResourceType,
@@ -73,7 +74,7 @@ class MeterTenantService {
               model: Location,
               as: 'Location',
               attributes: ['id', 'name', 'address'],
-            }
+            },
           ],
         },
       ],
@@ -89,15 +90,12 @@ class MeterTenantService {
   async checkOverlap(tenant_id, meter_id, assigned_from, assigned_to, excludeId = null) {
     const maxDate = '2099-12-31';
     const endDate = assigned_to || maxDate;
-    
+
     const where = {
       tenant_id,
       meter_id,
       assigned_from: { [Op.lte]: endDate },
-      [Op.or]: [
-        { assigned_to: null },
-        { assigned_to: { [Op.gte]: assigned_from } }
-      ]
+      [Op.or]: [{ assigned_to: null }, { assigned_to: { [Op.gte]: assigned_from } }],
     };
 
     // Exclude current record when updating
@@ -141,7 +139,7 @@ class MeterTenantService {
 
     // Prepare update fields
     const updates = {};
-    
+
     if (updateData.tenant_id !== undefined) {
       updates.tenant_id = updateData.tenant_id;
     }
@@ -159,9 +157,7 @@ class MeterTenantService {
     const tenant_id = updates.tenant_id ?? meterTenant.tenant_id;
     const meter_id = updates.meter_id ?? meterTenant.meter_id;
     const assigned_from = updates.assigned_from ?? meterTenant.assigned_from;
-    const assigned_to = updates.assigned_to !== undefined 
-      ? updates.assigned_to 
-      : meterTenant.assigned_to;
+    const assigned_to = updates.assigned_to !== undefined ? updates.assigned_to : meterTenant.assigned_to;
 
     // Validate date logic
     if (assigned_to && new Date(assigned_from) > new Date(assigned_to)) {
@@ -189,17 +185,15 @@ class MeterTenantService {
       where: {
         meter_id,
         assigned_from: { [Op.lte]: date },
-        [Op.or]: [
-          { assigned_to: null },
-          { assigned_to: { [Op.gte]: date } }
-        ]
+        [Op.or]: [{ assigned_to: null }, { assigned_to: { [Op.gte]: date } }],
       },
       include: [
         {
           model: Tenant,
+          as: 'Tenant',
           attributes: ['id', 'name', 'phone', 'email'],
-        }
-      ]
+        },
+      ],
     });
   }
 
@@ -210,6 +204,7 @@ class MeterTenantService {
       include: [
         {
           model: Meter,
+          as: 'Meter',
           attributes: ['id', 'serial_number', 'energy_resource_type_id', 'location_id'],
           include: [
             {
@@ -221,11 +216,11 @@ class MeterTenantService {
               model: Location,
               as: 'Location',
               attributes: ['id', 'name', 'address'],
-            }
+            },
           ],
         },
       ],
-      order: [['assigned_from', 'DESC']]
+      order: [['assigned_from', 'DESC']],
     });
   }
 }

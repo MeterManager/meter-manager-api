@@ -50,7 +50,7 @@ const createTenant = async (req, res) => {
       data: tenant,
     });
   } catch (error) {
-    res.status().json({
+    res.status(500).json({  // ✅ Added 500
       success: false,
       message: error.message,
     });

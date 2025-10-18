@@ -36,14 +36,17 @@ class MeterReadingService {
         include: [
           {
             model: MeterTenant,
+            as: 'MeterTenant',
             attributes: ['id', 'tenant_id', 'meter_id'],
             include: [
               {
                 model: Meter,
+                as: 'Meter',
                 attributes: ['id', 'serial_number', 'location_id', 'energy_resource_type_id'],
                 include: [
                   {
                     model: EnergyResourceType,
+                    as: 'EnergyResourceType',
                     attributes: ['id', 'name'],
                   },
                   {
@@ -55,19 +58,14 @@ class MeterReadingService {
               },
               {
                 model: Tenant,
-                attributes: ['id', 'name', 'occupied_area', 'location_id'],
-                include: [
-                  {
-                    model: Location,
-                    as: 'Location',
-                    attributes: ['id', 'name', 'address', 'occupied_area'],
-                  },
-                ],
+                as: 'Tenant',
+                attributes: ['id', 'name'], // FIXED: Removed location_id
               },
             ],
           },
           {
             model: User,
+            as: 'User',
             attributes: ['id', 'full_name'],
           },
         ],
@@ -75,16 +73,42 @@ class MeterReadingService {
         raw: false,
       });
 
-      const allTenants = await Tenant.findAll({
-        attributes: [[Sequelize.fn('SUM', Sequelize.col('occupied_area')), 'total_area']],
+      // Calculate total rented area from all meter-tenant associations
+      // This gives us the sum of occupied areas for locations with active meters
+      const meterTenants = await MeterTenant.findAll({
+        include: [
+          {
+            model: Meter,
+            as: 'Meter',
+            attributes: ['id', 'location_id'],
+            include: [
+              {
+                model: Location,
+                as: 'Location',
+                attributes: ['id', 'occupied_area'],
+              },
+            ],
+          },
+        ],
         raw: true,
       });
 
-      const totalRentedArea = parseFloat(allTenants[0]?.total_area || 0);
+      // Calculate total area from unique locations (avoiding duplicates)
+      const uniqueLocations = new Map();
+      meterTenants.forEach((mt) => {
+        // When raw: true, nested properties use dot notation in the property name
+        const locationId = mt['Meter.Location.id'];
+        const area = parseFloat(mt['Meter.Location.occupied_area'] || 0);
+        if (locationId && !uniqueLocations.has(locationId)) {
+          uniqueLocations.set(locationId, area);
+        }
+      });
+
+      const totalRentedArea = Array.from(uniqueLocations.values()).reduce((sum, area) => sum + area, 0);
 
       return readings.map((reading) => {
         const plainReading = reading.get({ plain: true });
-        const tenantArea = parseFloat(plainReading.MeterTenant?.Tenant?.occupied_area || 0);
+        const tenantArea = parseFloat(plainReading.MeterTenant?.Meter?.Location?.occupied_area || 0);
         const locationArea = parseFloat(plainReading.MeterTenant?.Meter?.Location?.occupied_area || 0);
         const areaPercentage = totalRentedArea > 0 ? (tenantArea / totalRentedArea) * 100 : 0;
 
@@ -107,14 +131,17 @@ class MeterReadingService {
       include: [
         {
           model: MeterTenant,
+          as: 'MeterTenant',
           attributes: ['id', 'tenant_id', 'meter_id'],
           include: [
             {
               model: Meter,
+              as: 'Meter',
               attributes: ['id', 'serial_number', 'location_id', 'energy_resource_type_id'],
               include: [
                 {
                   model: EnergyResourceType,
+                  as: 'EnergyResourceType',
                   attributes: ['id', 'name'],
                 },
                 {
@@ -126,19 +153,14 @@ class MeterReadingService {
             },
             {
               model: Tenant,
-              attributes: ['id', 'name', 'occupied_area', 'location_id'],
-              include: [
-                {
-                  model: Location,
-                  as: 'Location',
-                  attributes: ['id', 'name', 'address', 'occupied_area'],
-                },
-              ],
+              as: 'Tenant',
+              attributes: ['id', 'name'], // FIXED: Removed location_id
             },
           ],
         },
         {
           model: User,
+          as: 'User',
           attributes: ['id', 'full_name'],
         },
       ],
@@ -190,6 +212,7 @@ class MeterReadingService {
       include: [
         {
           model: Meter,
+          as: 'Meter',
           include: [
             {
               model: Location,
@@ -310,6 +333,7 @@ class MeterReadingService {
         include: [
           {
             model: Meter,
+            as: 'Meter',
             include: [
               {
                 model: Location,
@@ -404,12 +428,15 @@ class MeterReadingService {
       include: [
         {
           model: MeterTenant,
+          as: 'MeterTenant',
           include: [
             {
               model: Meter,
+              as: 'Meter',
               include: [
                 {
                   model: EnergyResourceType,
+                  as: 'EnergyResourceType',
                   attributes: ['id', 'name'],
                 },
                 {
@@ -421,6 +448,7 @@ class MeterReadingService {
             },
             {
               model: Tenant,
+              as: 'Tenant',
               attributes: ['id', 'name'],
             },
           ],

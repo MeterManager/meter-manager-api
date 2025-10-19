@@ -1,4 +1,4 @@
-const { Location, Tenant } = require('../../models');
+const { Location, Meter, ResourceDelivery, Tenant, sequelize } = require('../../models');
 const { Op } = require('sequelize');
 
 class LocationService {

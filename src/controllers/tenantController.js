@@ -51,8 +51,8 @@ const getTenantDependencies = async (req, res) => {
       data: dependencies,
       message:
         dependencies.active_meter_tenants > 0
-          ? `This tenant has ${dependencies.active_meter_tenants} active meter assignments that will be affected`
-          : 'No active dependent objects',
+          ? `Цей орендар має ${dependencies.active_meter_tenants} активних лічильників.`
+          : 'Немає активних залежностей',
     });
   } catch (error) {
     const statusCode = error.message === 'Tenant not found' ? 404 : 500;
@@ -68,7 +68,7 @@ const createTenant = async (req, res) => {
     const tenant = await tenantService.createTenant(req.body);
     res.status(201).json({
       success: true,
-      message: 'Tenant created successfully',
+      message: 'Орендаря успішно створено',
       data: tenant,
     });
   } catch (error) {
@@ -84,19 +84,9 @@ const updateTenant = async (req, res) => {
     const { id } = req.params;
     const tenant = await tenantService.updateTenant(id, req.body);
 
-    let message = 'Tenant updated successfully';
-    if (req.body.is_active === false) {
-      const dependencies = await tenantService.getTenantDependencies(id);
-      if (dependencies.active_meter_tenants === 0) {
-        message += ' (no dependent objects affected)';
-      } else {
-        message += ` (deactivated ${dependencies.active_meter_tenants} meter tenants)`;
-      }
-    }
-
     res.json({
       success: true,
-      message: message,
+      message: 'Орендаря успішно оновлено',
       data: tenant,
     });
   } catch (error) {
@@ -112,17 +102,11 @@ const updateTenant = async (req, res) => {
 const deleteTenant = async (req, res) => {
   try {
     const { id } = req.params;
-    const dependencies = await tenantService.getTenantDependencies(id);
     await tenantService.deleteTenant(id);
-
-    let message = 'Tenant deleted permanently';
-    if (dependencies.active_meter_tenants > 0) {
-      message += ` (also deleted: ${dependencies.active_meter_tenants} meter tenants)`;
-    }
 
     res.json({
       success: true,
-      message: message,
+      message: 'Орендаря успішно видалено',
     });
   } catch (error) {
     const statusCode =

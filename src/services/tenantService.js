@@ -1,4 +1,4 @@
-const { Tenant, MeterTenant, Location, sequelize } = require('../../models');
+const { Tenant, MeterTenant, Location } = require('../../models');
 const { Op } = require('sequelize');
 
 class TenantService {
@@ -107,35 +107,10 @@ class TenantService {
     return tenant;
   }
 
-  async cascadeDeactivateTenant(id) {
-    const transaction = await sequelize.transaction();
-    try {
-      const meterTenantsCount = await MeterTenant.count({
-        where: { tenant_id: id, [Op.or]: [{ assigned_to: null }, { assigned_to: { [Op.gte]: new Date() } }] },
-      });
-
-      await MeterTenant.update(
-        { assigned_to: new Date() },
-        {
-          where: {
-            tenant_id: id,
-            [Op.or]: [{ assigned_to: null }, { assigned_to: { [Op.gte]: new Date() } }],
-          },
-          transaction,
-        }
-      );
-
-      await transaction.commit();
-      return { deactivated_meter_tenants: meterTenantsCount };
-    } catch (error) {
-      await transaction.rollback();
-      throw error;
-    }
-  }
-
   async deleteTenant(id) {
     const tenant = await this.getTenantById(id);
     if (tenant.is_active) throw new Error('Cannot delete active tenant. Deactivate it first.');
+    
     await Location.update(
       { tenant_id: null, occupied_area: null },
       { where: { tenant_id: id } }
@@ -143,19 +118,6 @@ class TenantService {
 
     await MeterTenant.destroy({ where: { tenant_id: id } });
     return await tenant.destroy();
-  }
-
-  async cascadeDeleteTenant(id) {
-    const transaction = await sequelize.transaction();
-    try {
-      const meterTenantsCount = await MeterTenant.count({ where: { tenant_id: id } });
-      await MeterTenant.destroy({ where: { tenant_id: id }, transaction });
-      await transaction.commit();
-      return { deleted_meter_tenants: meterTenantsCount };
-    } catch (error) {
-      await transaction.rollback();
-      throw error;
-    }
   }
 }
 

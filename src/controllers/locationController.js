@@ -77,8 +77,24 @@ const createLocation = async (req, res) => {
 
 const updateLocation = async (req, res) => {
   try {
-    const location = await locationService.updateLocation(req.params.id, req.body);
-    res.json({ success: true, message: 'Location updated successfully', data: location });
+    const { id } = req.params;
+    const location = await locationService.updateLocation(id, req.body);
+
+    let message = 'Location updated successfully';
+    if (req.body.is_active === false) {
+      const dependencies = await locationService.getLocationDependencies(id);
+      if (dependencies.active_meters === 0 && dependencies.deliveries === 0) {
+        message += ' (no dependent objects affected)';
+      } else {
+        message += ` (deactivated ${dependencies.active_meters || 0} meters)`;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: message,
+      data: location,
+    });
   } catch (error) {
     res.status(error.message.includes('Invalid tenant_id') ? 400 :
                error.message.includes('Location not found') ? 404 :
@@ -112,16 +128,6 @@ const assignTenant = async (req, res) => {
   try {
     const { locationId, tenantId } = req.params;
     const location = await locationService.assignTenant(locationId, tenantId);
-
-    let message = 'Location updated successfully';
-    if (req.body.is_active === false) {
-      const dependencies = await locationService.getLocationDependencies(id);
-      if (dependencies.active_meters === 0 && dependencies.deliveries === 0) {
-        message += ' (no dependent objects affected)';
-      } else {
-        message += ` (deactivated ${dependencies.active_meters || 0} meters)`;
-      }
-    }
 
     res.json({
       success: true,
@@ -166,4 +172,3 @@ module.exports = {
   assignTenant,
   unassignTenant,
 };
-

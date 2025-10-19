@@ -117,7 +117,7 @@ router.post(
  * @swagger
  * /api/tenants/{id}:
  *   put:
- *     description: Updates tenant. When deactivating (is_active=false), all dependent meter tenants will be automatically deactivated.
+ *     description: Updates tenant.
  *     tags: [Tenants]
  *     parameters:
  *       - name: id
@@ -178,7 +178,7 @@ router.put(
  * @swagger
  * /api/tenants/{id}:
  *   delete:
- *     description: Permanently deletes tenant and ALL related data (meter tenants). Only inactive tenants can be deleted.
+ *     description: Permanently deletes tenant. Only inactive tenants can be deleted.
  *     tags: [Tenants]
  *     parameters:
  *       - name: id
@@ -221,7 +221,7 @@ router.delete(
  * /api/tenants/{id}/dependencies:
  *   get:
  *     summary: Get tenant dependencies info
- *     description: Returns information about dependent objects (meter tenants) for cascade deactivation warning
+ *     description: Returns information about dependent objects (meter tenants) for warning purposes
  *     tags: [Tenants]
  *     parameters:
  *       - name: id

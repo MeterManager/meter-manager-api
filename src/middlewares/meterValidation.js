@@ -52,7 +52,8 @@ const createMeterTenantValidation = [
   body('tenant_id').isInt({ min: 1 }).withMessage('Tenant ID must be a positive integer'),
   body('assigned_from').isISO8601().withMessage('Assigned from must be a valid date (YYYY-MM-DD)'),
   body('assigned_to')
-    .optional()
+    .optional({ nullable: true })
+    .if((value) => value !== null)
     .isISO8601()
     .withMessage('Assigned to must be a valid date (YYYY-MM-DD)')
     .custom((value, { req }) => {

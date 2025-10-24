@@ -6,37 +6,37 @@ class TenantService {
     const where = {};
     if (filters.is_active !== undefined) where.is_active = filters.is_active;
     if (filters.name) where.name = { [Op.iLike]: `%${filters.name}%` };
-  
+
     return await Tenant.findAll({
       where,
       include: [
         { model: MeterTenant, as: 'MeterTenants' },
-        { 
-          model: Location, 
+        {
+          model: Location,
           as: 'Locations',
-          attributes: ['id', 'name', 'occupied_area'] 
+          attributes: ['id', 'name', 'occupied_area']
         }
       ],
       order: [['created_at', 'DESC']],
     });
   }
-  
+
   async getTenantById(id) {
     return await Tenant.findByPk(id, {
       include: [
         { model: MeterTenant, as: 'MeterTenants' },
-        { 
-          model: Location, 
+        {
+          model: Location,
           as: 'Locations',
-          attributes: ['id', 'name', 'occupied_area'] // ✅ площа тут
+          attributes: ['id', 'name', 'occupied_area']
         }
       ],
     });
   }
-  
+
   async getSimpleTenants() {
     return await Tenant.findAll({
-      attributes: ['id', 'name'], 
+      attributes: ['id', 'name'],
       where: { is_active: true },
       order: [['name', 'ASC']],
     });
@@ -51,7 +51,7 @@ class TenantService {
 
   async createTenant(tenantData) {
     const { name, location_ids = [], contact_person, phone, email, is_active = true } = tenantData;
-  
+
     const tenant = await Tenant.create({
       name,
       contact_person,
@@ -59,19 +59,19 @@ class TenantService {
       email,
       is_active,
     });
-  
+
     if (Array.isArray(location_ids) && location_ids.length > 0) {
-      await Promise.all(location_ids.map(id => 
+      await Promise.all(location_ids.map(id =>
         Location.update(
           { tenant_id: tenant.id },
-          { where: { id } }
+          { where: { id }, validate: false }
         )
       ));
     }
-  
-    return await this.getTenantById(tenant.id); 
+
+    return await this.getTenantById(tenant.id);
   }
-  
+
   async updateTenant(id, updateData) {
     const tenant = await this.getTenantById(id);
     const { name, location_ids, contact_person, phone, email, is_active } = updateData;
@@ -85,36 +85,36 @@ class TenantService {
 
     if (Array.isArray(location_ids)) {
       await Location.update(
-        { tenant_id: null, occupied_area: null },
-        { where: { tenant_id: tenant.id } }
+        { tenant_id: null },
+        { where: { tenant_id: tenant.id }, validate: false }
       );
-  
-      await Promise.all(location_ids.map(id => 
+
+      await Promise.all(location_ids.map(id =>
         Location.update(
           { tenant_id: tenant.id },
-          { where: { id } }
+          { where: { id }, validate: false }
         )
       ));
     }
-  
-    await tenant.reload({ 
+    await tenant.reload({
       include: [
         { model: Location, as: 'Locations', attributes: ['id', 'name', 'occupied_area'] },
         { model: MeterTenant, as: 'MeterTenants' }
       ]
     });
-  
+
     return tenant;
   }
 
   async deleteTenant(id) {
     const tenant = await this.getTenantById(id);
     if (tenant.is_active) throw new Error('Cannot delete active tenant. Deactivate it first.');
-    
+
     await Location.update(
-      { tenant_id: null, occupied_area: null },
-      { where: { tenant_id: id } }
+      { tenant_id: null },
+      { where: { tenant_id: id }, validate: false }
     );
+
 
     await MeterTenant.destroy({ where: { tenant_id: id } });
     return await tenant.destroy();

@@ -206,7 +206,6 @@ class LocationService {
 
       const meterIds = meters.map((meter) => meter.id);
 
-      // Delete MeterTenant relations
       if (meterIds.length > 0) {
         await MeterTenant.destroy({
           where: { meter_id: { [Op.in]: meterIds } },
@@ -214,23 +213,23 @@ class LocationService {
         });
       }
 
-      // Delete Deliveries
       await ResourceDelivery.destroy({
         where: { location_id: locationId },
         transaction,
       });
 
-      // Delete Meters
       await Meter.destroy({
         where: { location_id: locationId },
         transaction,
       });
 
-      // Delete Tenants
-      await Tenant.destroy({
-        where: { location_id: locationId },
-        transaction,
-      });
+      await Location.update(
+        { tenant_id: null },
+        {
+          where: { id: locationId },
+          transaction,
+        }
+      );
 
       await transaction.commit();
 
@@ -245,12 +244,11 @@ class LocationService {
         deleted_deliveries: await ResourceDelivery.count({
           where: { location_id: locationId },
         }),
-        deleted_tenants: await Tenant.count({
-          where: { location_id: locationId },
-        }),
+        deleted_tenants: 0,
       };
     } catch (error) {
       await transaction.rollback();
+      console.error('Error in cascadeDeleteLocation:', error);
       throw error;
     }
   }

@@ -277,38 +277,40 @@ class MeterReadingService {
         d.current_reading,
         d.previous_reading
       );
-
-      const method = d.calculation_method || calculation_method;
-      let consumedEnergy = 0;
-      const distCoeff = d.calculation_coefficient ?? calculation_coefficient;
     
-      const distCalculationFactor = finalAreaForCalculation; 
- 
-      if (method === 'direct') {
+      const method = d.calculation_method || calculation_method;
+      const distCoeff = d.calculation_coefficient ?? calculation_coefficient;
+      const distEnergyCoeff = d.energy_consumption_coefficient ?? energy_consumption_coefficient;
+
+      const occupiedArea = parseFloat(meterTenant.Meter.Location?.occupied_area) || 0;
+      
+      let consumedEnergy = 0;
+    
+      if (method === "direct") {
         ({ total_consumption: consumedEnergy } = ConsumptionCalculator.calculateDirect(
           difference,
           distCoeff,
-          distCalculationFactor
+          occupiedArea
         ));
-      } else if (method === 'area_based') {
+      } else if (method === "area_based") {
         ({ total_consumption: consumedEnergy } = ConsumptionCalculator.calculateAreaBased(
-          areaValue, 
-          d.energy_consumption_coefficient ?? energy_consumption_coefficient,
-          distCalculationFactor
+          occupiedArea,
+          distEnergyCoeff,
+          occupiedArea
         ));
-      } else if (method === 'mixed') {
+      } else if (method === "mixed") {
         ({ total_consumption: consumedEnergy } = ConsumptionCalculator.calculateMixed(
           difference,
-          areaValue,
+          occupiedArea,
           distCoeff,
-          d.energy_consumption_coefficient ?? energy_consumption_coefficient,
-          distCalculationFactor
+          distEnergyCoeff,
+          occupiedArea
         ));
       }
-
+    
       const cost = ConsumptionCalculator.calculateTotalCost(consumedEnergy, tariff.price);
-      total_cost += parseFloat(cost) || 0; 
-
+      total_cost += parseFloat(cost) || 0;
+    
       return {
         category: d.category,
         current_reading: d.current_reading,
@@ -316,45 +318,50 @@ class MeterReadingService {
         difference,
         calculation_method: method,
         calculation_coefficient: distCoeff,
-        energy_consumption_coefficient: d.energy_consumption_coefficient ?? energy_consumption_coefficient,
-        area_percentage: d.area_percentage ,
+        energy_consumption_coefficient: distEnergyCoeff,
+        area_percentage: occupiedArea, 
         consumed_energy: consumedEnergy.toFixed(2),
-        cost,
+        cost: cost.toFixed(2),
       };
     });
+    
+    
 
     if (distributionRecords.length === 0) {
       total_cost = ConsumptionCalculator.calculateTotalCost(total_consumption, tariff.price);
     }
 
-    const reading = await MeterReading.create(
-      {
-        meter_tenant_id,
-        reading_date,
-        current_reading,
-        previous_reading: finalPreviousReading,
-        consumption,
-        unit_price: tariff.price,
-        direct_consumption,
-        area_based_consumption: final_area_consumption,
-        total_consumption,
-        total_cost: total_cost.toFixed(2),
-        calculation_method,
-        executor_name,
-        tenant_representative,
-        created_by,
-        rental_area,
-        total_rented_area_percentage,
-        energy_consumption_coefficient,
-        calculation_coefficient,
-        notes,
-        act_number,
-        distributions: distributionRecords,
-      },
-      {
-        include: [{ model: MeterReadingDistribution, as: 'distributions' }],
-      }
-    );
+    const reading = await MeterReading.create({
+      meter_tenant_id,
+      reading_date,
+      current_reading,
+      previous_reading: finalPreviousReading,
+      consumption,
+      unit_price: tariff.price,
+      direct_consumption,
+      area_based_consumption: final_area_consumption,
+      total_consumption,
+      total_cost: total_cost.toFixed(2),
+      calculation_method,
+      executor_name,
+      tenant_representative,
+      created_by,
+      rental_area,
+      total_rented_area_percentage,
+      energy_consumption_coefficient,
+      calculation_coefficient,
+      notes,
+      act_number,
+    });
+    
+    if (distributionRecords.length > 0) {
+      const recordsWithId = distributionRecords.map((d) => ({
+        ...d,
+        meter_reading_id: reading.id,
+      }));
+      await MeterReadingDistribution.bulkCreate(recordsWithId);
+    }
+    
     return reading;
   }
   
@@ -436,47 +443,46 @@ class MeterReadingService {
             d.current_reading,
             d.previous_reading
           );
-  
+        
           const method = d.calculation_method || reading.calculation_method;
-          let consumedEnergy = 0;
           const distCoeff = d.calculation_coefficient ?? calculationCoeff;
-          const distAreaPercent = d.area_percentage ?? reading.total_rented_area_percentage ?? 100;
-          consumedEnergy = (difference * distCoeff * distAreaPercent) / 100;
-          consumedEnergy = parseFloat(consumedEnergy) || 0;
-
+          const distAreaValue = parseFloat(meterTenant.Meter.Location?.occupied_area) || 0;
+          let consumedEnergy = 0;
+        
           if (method === "direct") {
             ({ total_consumption: consumedEnergy } = ConsumptionCalculator.calculateDirect(
               difference,
-              d.calculation_coefficient ?? calculationCoeff,
-              finalAreaForCalculation
+              distCoeff,
+              distAreaValue
             ));
           } else if (method === "area_based") {
             ({ total_consumption: consumedEnergy } = ConsumptionCalculator.calculateAreaBased(
-              areaValue,
+              distAreaValue,
               d.energy_consumption_coefficient ?? energyCoeff,
-              finalAreaForCalculation
+              distAreaValue
             ));
           } else if (method === "mixed") {
             ({ total_consumption: consumedEnergy } = ConsumptionCalculator.calculateMixed(
               difference,
-              areaValue,
-              d.calculation_coefficient ?? calculationCoeff,
+              distAreaValue,
+              distCoeff,
               d.energy_consumption_coefficient ?? energyCoeff,
-              finalAreaForCalculation
+              distAreaValue
             ));
           }
-
+        
           const cost = ConsumptionCalculator.calculateTotalCost(consumedEnergy, price);
           total_cost += parseFloat(cost) || 0;
-  
+        
           newDistributions.push({
             ...d,
             meter_reading_id: id,
             difference,
             consumed_energy: consumedEnergy.toFixed(2),
             cost: cost.toFixed(2),
+            area_percentage:distAreaValue 
           });
-        }
+        }     
         await MeterReadingDistribution.bulkCreate(newDistributions);
       }
 

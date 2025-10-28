@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       this.belongsTo(models.MeterReading, {
         foreignKey: 'meter_reading_id',
-        as: 'reading',
+        as: 'MeterReading',
         onDelete: 'CASCADE',
       });
     }
@@ -50,7 +50,6 @@ module.exports = (sequelize, DataTypes) => {
       area_percentage: {
         type: DataTypes.DECIMAL(5, 2),
         allowNull: true,
-        defaultValue: 100.0,
       },
       consumed_energy: {
         type: DataTypes.DECIMAL(12, 4),

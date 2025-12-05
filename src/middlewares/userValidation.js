@@ -1,23 +1,43 @@
 const { body, param, query, validationResult } = require('express-validator');
 
+const VALID_ROLES = ['admin', 'manager', 'user'];
+
+const validatePositiveInt = (field, location = param, isOptional = false) => {
+  let chain = location(field);
+  if (isOptional) chain = chain.optional();
+  return chain.isInt({ min: 1 }).withMessage(`${field} must be a positive integer.`);
+};
+
+const validateFullName = (field, location = body, isOptional = true) => {
+  let chain = location(field);
+  if (isOptional) chain = chain.optional();
+
+  return chain.isString().withMessage(`${field} must be a string.`);
+};
+
+const validateRole = (field, location = body, isOptional = true) => {
+  let chain = location(field);
+  if (isOptional) chain = chain.optional();
+
+  return chain.isIn(VALID_ROLES).withMessage(`Role must be one of: ${VALID_ROLES.join(', ')}.`);
+};
+
+const validateIsActive = (field, location = body) =>
+  location(field).optional().isBoolean().withMessage(`${field} must be a boolean.`);
+
 const updateUserValidation = [
-  param('id').isInt({ min: 1 }).withMessage('User ID must be a positive integer'),
-
-  body('full_name').optional().isString().withMessage('Full name must be a string'),
-
-  body('role').optional().isIn(['admin', 'manager', 'user']).withMessage('Role must be one of: admin, operator, user'),
-
-  body('is_active').optional().isBoolean().withMessage('is_active must be a boolean'),
+  validatePositiveInt('id', param, false),
+  validateFullName('full_name', body, true),
+  validateRole('role', body, true),
+  validateIsActive('is_active', body),
 ];
 
-const getUserByIdValidation = [param('id').isInt({ min: 1 }).withMessage('User ID must be a positive integer')];
+const getUserByIdValidation = [validatePositiveInt('id', param, false)];
 
 const getUsersQueryValidation = [
-  query('full_name').optional().isString().withMessage('Full name must be a string'),
-
-  query('role').optional().isIn(['admin', 'manager', 'user']).withMessage('Role must be one of: admin, manager, user'),
-
-  query('is_active').optional().isBoolean().withMessage('is_active must be a boolean'),
+  validateFullName('full_name', query, true),
+  validateRole('role', query, true),
+  validateIsActive('is_active', query),
 ];
 
 const handleValidationErrors = (req, res, next) => {

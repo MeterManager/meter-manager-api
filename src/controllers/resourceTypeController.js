@@ -1,4 +1,22 @@
+'use strict';
 const energyResourceTypeService = require('../services/resourceTypeService');
+
+const mapErrorToStatus = (errorMessage) => {
+  if (errorMessage.includes('not found')) return 404;
+  if (errorMessage.includes('already exists')) return 409;
+  if (errorMessage.includes('Cannot delete active') || errorMessage.includes('Invalid')) return 400;
+  return 500;
+};
+
+const sendErrorResponse = (res, error) => {
+  const statusCode = mapErrorToStatus(error.message);
+  const clientMessage = statusCode === 500 ? 'Internal server error' : error.message;
+
+  res.status(statusCode).json({
+    success: false,
+    message: clientMessage,
+  });
+};
 
 const getAllResourceTypes = async (req, res) => {
   try {
@@ -8,17 +26,13 @@ const getAllResourceTypes = async (req, res) => {
     };
 
     const types = await energyResourceTypeService.getAllResourceTypes(filters);
-    res.json({
+    res.status(200).json({
       success: true,
       data: types,
       count: types.length,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch resource types',
-      error: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -26,16 +40,11 @@ const getResourceTypeById = async (req, res) => {
   try {
     const { id } = req.params;
     const type = await energyResourceTypeService.getResourceTypeById(id);
-    res.json({
-      success: true,
-      data: type,
-    });
+    if (!type) throw new Error('Resource type not found');
+
+    res.status(200).json({ success: true, data: type });
   } catch (error) {
-    const statusCode = error.message === 'Resource type not found' ? 404 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -44,20 +53,14 @@ const getResourceTypeDependencies = async (req, res) => {
     const { id } = req.params;
     const dependencies = await energyResourceTypeService.getResourceTypeDependencies(id);
 
-    res.json({
-      success: true,
-      data: dependencies,
-      message:
-        dependencies.active_meters > 0 || dependencies.deliveries > 0
-          ? `This resource type has ${dependencies.active_meters} active meters and ${dependencies.deliveries} deliveries that will be affected`
-          : 'No active dependent objects',
-    });
+    const message =
+      dependencies.active_meters > 0 || dependencies.deliveries > 0
+        ? `This resource type has ${dependencies.active_meters} active meters and ${dependencies.deliveries} deliveries that will be affected`
+        : 'No active dependent objects';
+
+    res.status(200).json({ success: true, data: dependencies, message });
   } catch (error) {
-    const statusCode = error.message === 'Resource type not found' ? 404 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -70,11 +73,7 @@ const createResourceType = async (req, res) => {
       data: type,
     });
   } catch (error) {
-    const statusCode = error.message.includes('already exists') ? 409 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -93,17 +92,9 @@ const updateResourceType = async (req, res) => {
       }
     }
 
-    res.json({
-      success: true,
-      message: message,
-      data: type,
-    });
+    res.status(200).json({ success: true, message: message, data: type });
   } catch (error) {
-    const statusCode = error.message === 'Resource type not found' ? 404 : error.message.includes('already exists') ? 409 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -119,17 +110,9 @@ const deleteResourceType = async (req, res) => {
     if (dependencies.deliveries > 0) deletedItems.push(`${dependencies.deliveries} deliveries`);
     if (deletedItems.length > 0) message += ` (also deleted: ${deletedItems.join(', ')})`;
 
-    res.json({
-      success: true,
-      message: message,
-    });
+    res.status(200).json({ success: true, message: message });
   } catch (error) {
-    const statusCode =
-      error.message === 'Resource type not found' ? 404 : error.message.includes('Cannot delete active') ? 400 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 

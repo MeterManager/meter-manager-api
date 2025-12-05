@@ -1,70 +1,77 @@
 const { body, param, query, validationResult } = require('express-validator');
 
-const createTariffValidation = [
-  body('location_id').isInt({ min: 1 }).withMessage('Location ID must be a positive integer'),
 
-  body('energy_resource_type_id').isInt({ min: 1 }).withMessage('Energy Resource Type ID must be a positive integer'),
+const validatePositiveInt = (field, location = body, isOptional = false) => {
+  let chain = location(field);
+  if (isOptional) chain = chain.optional();
+  return chain.isInt({ min: 1 }).withMessage(`${field} must be a positive integer.`);
+}
+
+const validateDate = (field, location = body, isOptional = false, isRequired = false) => {
+    let chain = location(field);
+    if (isRequired) chain = chain.notEmpty().withMessage(`${field} is required`);
+    if (isOptional) chain = chain.optional({ nullable: true });
+    
+    return chain
+        .isDate({ format: 'YYYY-MM-DD' })
+        .withMessage(`${field} must be a valid date in YYYY-MM-DD format`);
+};
+
+const validateValidToDate = () => 
+    validateDate('valid_to', body, true)
+    .custom((value, { req }) => {
+      const validFrom = req.body.valid_from;
+      const validTo = value;
+
+      if (validTo && validFrom) {
+        if (new Date(validTo) <= new Date(validFrom)) {
+          throw new Error('valid_to date must be after valid_from date.');
+        }
+      }
+      return true;
+    });
+
+
+const createTariffValidation = [
+  validatePositiveInt('location_id'),
+  validatePositiveInt('energy_resource_type_id'),
 
   body('price')
-    .isDecimal({ decimal_digits: '1,4' })
-    .withMessage('Price must be a decimal number with up to 4 decimal places'),
+    .notEmpty().withMessage('Price is required')
+    .isFloat({ min: 0, decimal_digits: '1,4' })
+    .withMessage('Price must be a non-negative decimal number with up to 4 decimal places'),
 
-  body('valid_from')
-    .isDate({ format: 'YYYY-MM-DD' })
-    .withMessage('valid_from must be a valid date in YYYY-MM-DD format'),
-
-  body('valid_to')
-    .optional()
-    .isDate({ format: 'YYYY-MM-DD' })
-    .withMessage('valid_to must be a valid date in YYYY-MM-DD format'),
+  validateDate('valid_from', body, false, true),
+  validateValidToDate(),
 ];
 
 const updateTariffValidation = [
   param('id').isInt({ min: 1 }).withMessage('Tariff ID must be a positive integer'),
 
-  body('location_id').optional().isInt({ min: 1 }).withMessage('Location ID must be a positive integer'),
-
-  body('energy_resource_type_id')
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage('Energy Resource Type ID must be a positive integer'),
+  validatePositiveInt('location_id', body, true),
+  validatePositiveInt('energy_resource_type_id', body, true),
 
   body('price')
     .optional()
-    .isDecimal({ decimal_digits: '1,4' })
-    .withMessage('Price must be a decimal number with up to 4 decimal places'),
+    .isFloat({ min: 0, decimal_digits: '1,4' })
+    .withMessage('Price must be a non-negative decimal number with up to 4 decimal places'),
 
-  body('valid_from')
-    .optional()
-    .isDate({ format: 'YYYY-MM-DD' })
-    .withMessage('valid_from must be a valid date in YYYY-MM-DD format'),
-
-  body('valid_to')
-    .optional()
-    .isDate({ format: 'YYYY-MM-DD' })
-    .withMessage('valid_to must be a valid date in YYYY-MM-DD format'),
+  validateDate('valid_from', body, true), 
+  
+  validateValidToDate(), 
 ];
 
-const getTariffByIdValidation = [param('id').isInt({ min: 1 }).withMessage('Tariff ID must be a positive integer')];
+const getTariffByIdValidation = [
+  param('id').isInt({ min: 1 }).withMessage('Tariff ID must be a positive integer')
+];
 
 const getTariffsQueryValidation = [
-  query('location_id').optional().isInt({ min: 1 }).withMessage('Location ID must be a positive integer'),
-
-  query('energy_resource_type_id')
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage('Energy Resource Type ID must be a positive integer'),
-
-  query('valid_from')
-    .optional()
-    .isDate({ format: 'YYYY-MM-DD' })
-    .withMessage('valid_from must be a valid date in YYYY-MM-DD format'),
-
-  query('valid_to')
-    .optional()
-    .isDate({ format: 'YYYY-MM-DD' })
-    .withMessage('valid_to must be a valid date in YYYY-MM-DD format'),
+  validatePositiveInt('location_id', query, true),
+  validatePositiveInt('energy_resource_type_id', query, true),
+  validateDate('valid_from', query, true),
+  validateDate('valid_to', query, true),
 ];
+
 
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);

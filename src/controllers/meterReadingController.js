@@ -1,4 +1,23 @@
+'use strict';
 const meterReadingService = require('../services/meterReadingService');
+
+const mapErrorToStatus = (errorMessage) => {
+  if (errorMessage.includes('not found')) return 404;
+  if (errorMessage.includes('already exists') || errorMessage.includes('overlap')) return 409;
+  if (errorMessage.includes('Invalid') || errorMessage.includes('Data mismatch')) return 400;
+  return 500;
+};
+
+const sendErrorResponse = (res, error) => {
+  const statusCode = mapErrorToStatus(error.message);
+  const clientMessage = statusCode === 500 ? 'Internal server error' : error.message;
+
+  res.status(statusCode).json({
+    success: false,
+    message: clientMessage,
+  });
+};
+
 const getAllReadings = async (req, res) => {
   try {
     const filters = {
@@ -9,23 +28,15 @@ const getAllReadings = async (req, res) => {
 
     const readings = await meterReadingService.getAllReadings(filters);
 
-    // Convert Sequelize instances to plain objects
-    const plainReadings = Array.isArray(readings) 
-      ? readings.map(r => r.toJSON ? r.toJSON() : r)
-      : readings;
+    const plainReadings = Array.isArray(readings) ? readings.map((r) => (r.toJSON ? r.toJSON() : r)) : readings;
 
-    res.json({
+    res.status(200).json({
       success: true,
       data: plainReadings,
       count: plainReadings.length,
     });
   } catch (error) {
-    console.error('Error in getAllReadings controller:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch meter readings',
-      error: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -34,16 +45,11 @@ const getReadingById = async (req, res) => {
     const { id } = req.params;
     const reading = await meterReadingService.getReadingById(id);
 
-    res.json({
-      success: true,
-      data: reading,
-    });
+    if (!reading) throw new Error('Meter reading not found');
+
+    res.status(200).json({ success: true, data: reading });
   } catch (error) {
-    const statusCode = error.message === 'Meter reading not found' ? 404 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -57,15 +63,7 @@ const createReading = async (req, res) => {
       data: reading,
     });
   } catch (error) {
-    const statusCode =
-      error.message.includes('already exists') || error.message.includes('not found')
-        ? 400
-        : 500;
-
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -74,17 +72,13 @@ const updateReading = async (req, res) => {
     const { id } = req.params;
     const reading = await meterReadingService.updateReading(id, req.body);
 
-    res.json({
+    res.status(200).json({
       success: true,
       message: 'Meter reading updated successfully',
       data: reading,
     });
   } catch (error) {
-    const statusCode = error.message === 'Meter reading not found' ? 404 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -93,16 +87,12 @@ const deleteReading = async (req, res) => {
     const { id } = req.params;
     await meterReadingService.deleteReading(id);
 
-    res.json({
+    res.status(200).json({
       success: true,
       message: 'Meter reading deleted successfully',
     });
   } catch (error) {
-    const statusCode = error.message === 'Meter reading not found' ? 404 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -110,17 +100,13 @@ const getReadingsSummary = async (req, res) => {
   try {
     const summary = await meterReadingService.getReadingsSummary(req.query);
 
-    res.json({
+    res.status(200).json({
       success: true,
       message: 'Meter readings summary fetched successfully',
       data: summary,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch readings summary',
-      error: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -130,5 +116,5 @@ module.exports = {
   createReading,
   updateReading,
   deleteReading,
-  getReadingsSummary, 
+  getReadingsSummary,
 };

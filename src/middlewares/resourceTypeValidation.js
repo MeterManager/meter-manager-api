@@ -1,58 +1,67 @@
 const { body, param, query, validationResult } = require('express-validator');
 
-const createResourceTypeValidation = [
-  body('name')
-    .trim()
-    .notEmpty()
-    .withMessage('Name is required')
+
+const validateIdParam = () => 
+  param('id').isInt({ min: 1 }).withMessage('Resource Type ID must be a positive integer');
+
+const validateName = (isOptional = false) => {
+  let chain = body('name').trim();
+  
+  if (!isOptional) {
+    chain = chain.notEmpty().withMessage('Name is required');
+  } else {
+    chain = chain.optional().notEmpty().withMessage('Name cannot be empty'); 
+  }
+  
+  return chain
     .isLength({ min: 2, max: 255 })
-    .withMessage('Name must be between 2 and 255 characters'),
+    .withMessage('Name must be between 2 and 255 characters.');
+};
 
-  body('unit')
-    .trim()
-    .notEmpty()
-    .withMessage('Unit is required')
+const validateUnit = (isOptional = false) => {
+  let chain = body('unit').trim();
+  
+  if (!isOptional) {
+    chain = chain.notEmpty().withMessage('Unit is required');
+  } else {
+    chain = chain.optional().notEmpty().withMessage('Unit cannot be empty');
+  }
+  
+  return chain
     .isLength({ min: 1, max: 50 })
-    .withMessage('Unit must be between 1 and 50 characters'),
+    .withMessage('Unit must be between 1 and 50 characters.');
+};
 
-  body('is_active').optional().isBoolean().withMessage('is_active must be a boolean value'),
+const validateIsActive = () => 
+  body('is_active').optional().isBoolean().withMessage('is_active must be a boolean value.');
+
+const createResourceTypeValidation = [
+  validateName(false),
+  validateUnit(false),
+  validateIsActive(),
 ];
 
 const updateResourceTypeValidation = [
-  param('id').isInt({ min: 1 }).withMessage('Resource Type ID must be a positive integer'),
-
-  body('name')
-    .optional()
-    .trim()
-    .notEmpty()
-    .withMessage('Name cannot be empty')
-    .isLength({ min: 2, max: 255 })
-    .withMessage('Name must be between 2 and 255 characters'),
-
-  body('unit')
-    .optional()
-    .trim()
-    .notEmpty()
-    .withMessage('Unit cannot be empty')
-    .isLength({ min: 1, max: 50 })
-    .withMessage('Unit must be between 1 and 50 characters'),
-
-  body('is_active').optional().isBoolean().withMessage('is_active must be a boolean value'),
+  validateIdParam(),
+  validateName(true),
+  validateUnit(true),
+  validateIsActive(),
 ];
 
 const getResourceTypeByIdValidation = [
-  param('id').isInt({ min: 1 }).withMessage('Resource Type ID must be a positive integer'),
+  validateIdParam(),
 ];
 
 const getResourceTypesQueryValidation = [
   query('is_active').optional().isBoolean().withMessage('is_active must be a boolean value'),
-
+  
   query('name')
     .optional()
     .trim()
     .isLength({ min: 1, max: 255 })
     .withMessage('Name filter must be between 1 and 255 characters'),
 ];
+
 
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);

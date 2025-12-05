@@ -13,7 +13,6 @@ class MeterTenantService {
       where.meter_id = filters.meter_id;
     }
 
-    // Fixed: Properly filter for overlapping date ranges
     if (filters.assigned_from || filters.assigned_to) {
       const from = filters.assigned_from || '1900-01-01';
       const to = filters.assigned_to || new Date().toISOString().split('T')[0];
@@ -86,7 +85,6 @@ class MeterTenantService {
     return meterTenant;
   }
 
-  // Fixed: Improved overlap detection logic
   async checkOverlap(tenant_id, meter_id, assigned_from, assigned_to, excludeId = null) {
     const maxDate = '2099-12-31';
     const endDate = assigned_to || maxDate;
@@ -98,7 +96,6 @@ class MeterTenantService {
       [Op.or]: [{ assigned_to: null }, { assigned_to: { [Op.gte]: assigned_from } }],
     };
 
-    // Exclude current record when updating
     if (excludeId) {
       where.id = { [Op.ne]: excludeId };
     }
@@ -109,17 +106,14 @@ class MeterTenantService {
   async createMeterTenant(data) {
     const { tenant_id, meter_id, assigned_from, assigned_to } = data;
 
-    // Validate required fields
     if (!tenant_id || !meter_id || !assigned_from) {
       throw new Error('tenant_id, meter_id, and assigned_from are required');
     }
 
-    // Validate date logic
     if (assigned_to && new Date(assigned_from) > new Date(assigned_to)) {
       throw new Error('assigned_from cannot be later than assigned_to');
     }
 
-    // Check for overlapping assignments
     const existing = await this.checkOverlap(tenant_id, meter_id, assigned_from, assigned_to);
 
     if (existing) {
@@ -137,7 +131,6 @@ class MeterTenantService {
   async updateMeterTenant(id, updateData) {
     const meterTenant = await this.getMeterTenantById(id);
 
-    // Prepare update fields
     const updates = {};
 
     if (updateData.tenant_id !== undefined) {
@@ -153,18 +146,15 @@ class MeterTenantService {
       updates.assigned_to = updateData.assigned_to;
     }
 
-    // Use updated or existing values for validation
     const tenant_id = updates.tenant_id ?? meterTenant.tenant_id;
     const meter_id = updates.meter_id ?? meterTenant.meter_id;
     const assigned_from = updates.assigned_from ?? meterTenant.assigned_from;
     const assigned_to = updates.assigned_to !== undefined ? updates.assigned_to : meterTenant.assigned_to;
 
-    // Validate date logic
     if (assigned_to && new Date(assigned_from) > new Date(assigned_to)) {
       throw new Error('assigned_from cannot be later than assigned_to');
     }
 
-    // Check for overlapping assignments (excluding current record)
     const existing = await this.checkOverlap(tenant_id, meter_id, assigned_from, assigned_to, id);
 
     if (existing) {
@@ -179,7 +169,6 @@ class MeterTenantService {
     return await meterTenant.destroy();
   }
 
-  // Helper method to get active assignments for a meter
   async getActiveMeterAssignments(meter_id, date = new Date()) {
     return await MeterTenant.findAll({
       where: {
@@ -197,7 +186,6 @@ class MeterTenantService {
     });
   }
 
-  // Helper method to get tenant's meter history
   async getTenantMeterHistory(tenant_id) {
     return await MeterTenant.findAll({
       where: { tenant_id },

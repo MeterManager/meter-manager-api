@@ -1,54 +1,57 @@
 const { body, param, query, validationResult } = require('express-validator');
 
-const createLocationValidation = [
-  body('name')
-    .trim()
-    .notEmpty()
-    .withMessage('Name is required')
-    .isLength({ min: 2, max: 255 }),
+const validateName = (isOptional = false) => {
+  let chain = body('name').trim();
 
-  body('address').optional().trim().isLength({ max: 1000 }),
+  if (!isOptional) {
+    chain = chain.notEmpty().withMessage('Name is required');
+  } else {
+    chain = chain.optional();
+  }
 
+  return chain.isLength({ min: 2, max: 255 }).withMessage('Name must be between 2 and 255 characters.');
+};
+
+const validateAddress = () => body('address').optional({ nullable: true }).trim().isLength({ max: 1000 });
+
+const validateTenantId = () =>
   body('tenant_id')
     .optional({ nullable: true })
-    .custom((value) => value === null || Number.isInteger(value))
-    .withMessage('tenant_id must be an integer or null'),
+    .custom((value) => value === null || (Number.isInteger(value) && value > 0))
+    .withMessage('tenant_id must be a positive integer or null.');
 
-  body('is_active').optional().isBoolean(),
-];
+const validateIsActive = () =>
+  body('is_active').optional().isBoolean().withMessage('is_active must be a boolean value (true/false).');
+
+const validateIdParam = () => param('id').isInt({ min: 1 }).withMessage('Location ID must be a positive integer');
+
+const validateIdParamForAssignment = (paramName) =>
+  param(paramName).isInt({ min: 1 }).withMessage(`${paramName} must be a positive integer.`);
+
+const createLocationValidation = [validateName(false), validateAddress(), validateTenantId(), validateIsActive()];
 
 const updateLocationValidation = [
-  param('id').isInt({ min: 1 }).withMessage('Location ID must be a positive integer'),
-
-  body('name').optional().trim().isLength({ min: 2, max: 255 }),
-
-  body('address').optional().trim().isLength({ max: 1000 }),
-
-  body('tenant_id')
-    .optional({ nullable: true })
-    .custom((value) => value === null || Number.isInteger(value))
-    .withMessage('tenant_id must be an integer or null'),
-
-  body('is_active').optional().isBoolean(),
+  validateIdParam(),
+  validateName(true),
+  validateAddress(),
+  validateTenantId(),
+  validateIsActive(),
 ];
 
-const getLocationByIdValidation = [
-  param('id').isInt({ min: 1 }).withMessage('Location ID must be a positive integer')
-];
+const getLocationByIdValidation = [validateIdParam()];
 
 const getLocationsQueryValidation = [
-  query('is_active').optional().isBoolean(),
-  query('name').optional().trim().isLength({ min: 1, max: 255 }),
+  query('is_active').optional().isBoolean().withMessage('is_active filter must be a boolean.'),
+  query('name')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 255 })
+    .withMessage('Name filter must be between 1 and 255 characters.'),
 ];
 
-const assignTenantValidation = [
-  param('locationId').isInt({ min: 1 }),
-  param('tenantId').isInt({ min: 1 }),
-];
+const assignTenantValidation = [validateIdParamForAssignment('locationId'), validateIdParamForAssignment('tenantId')];
 
-const unassignTenantValidation = [
-  param('locationId').isInt({ min: 1 }),
-];
+const unassignTenantValidation = [validateIdParamForAssignment('locationId')];
 
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);

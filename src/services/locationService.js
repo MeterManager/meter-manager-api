@@ -154,7 +154,7 @@ class LocationService {
     const activeMeters = await Meter.count({
       where: { location_id: locationId, is_active: true },
     });
-    
+
     const deliveries = await ResourceDelivery.count({
       where: { location_id: locationId },
     });

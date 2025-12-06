@@ -2,7 +2,11 @@
 const AuthService = require('../services/authService');
 
 class AuthController {
-  async verifyToken(req, res) {
+  constructor() {
+    this.verifyToken = this.verifyToken.bind(this);
+  }
+
+  verifyToken = async (req, res) => {
     const payload = req.auth?.payload;
     const auth0UserId = payload?.sub;
 
@@ -25,12 +29,12 @@ class AuthController {
         user,
       });
     } catch (error) {
-      console.error('Error in verifyToken:', error);  
+      console.error('Error in verifyToken:', error);
       res.status(500).json({
         message: 'Internal server error during token verification and user synchronization.',
       });
     }
-  }
+  };
 }
 
 module.exports = new AuthController();

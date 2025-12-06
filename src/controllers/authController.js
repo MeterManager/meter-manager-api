@@ -25,6 +25,7 @@ class AuthController {
         user,
       });
     } catch (error) {
+      console.error('Error in verifyToken:', error);  
       res.status(500).json({
         message: 'Internal server error during token verification and user synchronization.',
       });

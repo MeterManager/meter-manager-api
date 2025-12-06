@@ -8,12 +8,10 @@ const checkJwt = auth({
   tokenSigningAlg: 'RS256',
 });
 
-/*
-function logAuthSecure(req, res, next) {
+function logAuth(req, res, next) {
     console.log('User ID:', req.auth?.payload?.sub);
     next();
 }
-*/
 
 function checkRole(requiredRole) {
   return (req, res, next) => {
@@ -29,4 +27,4 @@ function checkRole(requiredRole) {
   };
 }
 
-module.exports = { checkJwt, checkRole };
+module.exports = { checkJwt, checkRole, logAuth };

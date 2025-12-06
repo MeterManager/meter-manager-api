@@ -1,11 +1,10 @@
 'use strict';
-const tenantService = require('../services/tenantService');
-const locationService = require('../services/locationService');
+const userService = require('../services/userService');
 
 const mapErrorToStatus = (errorMessage) => {
   if (errorMessage.includes('not found')) return 404;
-  if (errorMessage.includes('already exists') || errorMessage.includes('assigned')) return 409;
-  if (errorMessage.includes('Cannot delete active') || errorMessage.includes('Invalid')) return 400;
+  if (errorMessage.includes('unique constraint') || errorMessage.includes('already exists')) return 409;
+  if (errorMessage.includes('Invalid') || errorMessage.includes('Validation')) return 400;
   return 500;
 };
 
@@ -19,132 +18,62 @@ const sendErrorResponse = (res, error) => {
   });
 };
 
-const getAllTenants = async (req, res) => {
+const getAllUsers = async (req, res) => {
   try {
     const filters = {
+      full_name: req.query.full_name,
+      role: req.query.role,
       is_active: req.query.is_active,
-      name: req.query.name,
-      location_id: req.query.location_id,
     };
 
-    const tenants = await tenantService.getAllTenants(filters);
+    const users = await userService.getAllUsers(filters);
+
     res.status(200).json({
       success: true,
-      data: tenants,
-      count: tenants.length,
+      data: users,
+      count: users.length,
     });
   } catch (error) {
     sendErrorResponse(res, error);
   }
 };
 
-const getTenantById = async (req, res) => {
+const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
-    const tenant = await tenantService.getTenantById(id);
-    if (!tenant) throw new Error('Tenant not found');
+    const user = await userService.getUserById(id);
 
-    res.status(200).json({ success: true, data: tenant });
+    if (!user) throw new Error('User not found');
+
+    res.status(200).json({ success: true, data: user });
   } catch (error) {
     sendErrorResponse(res, error);
   }
 };
 
-const getTenantDependencies = async (req, res) => {
+const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const dependencies = await tenantService.getTenantDependencies(id);
+    const user = await userService.updateUser(id, req.body);
 
-    const message =
-      dependencies.active_meter_tenants > 0
-        ? `Цей орендар має ${dependencies.active_meter_tenants} активних лічильників.`
-        : 'Немає активних залежностей';
-
-    res.status(200).json({ success: true, data: dependencies, message });
-  } catch (error) {
-    sendErrorResponse(res, error);
-  }
-};
-
-const createTenant = async (req, res) => {
-  try {
-    const tenant = await tenantService.createTenant(req.body);
-    res.status(201).json({
+    res.status(200).json({
       success: true,
-      message: 'Орендаря успішно створено',
-      data: tenant,
+      message: 'User updated successfully',
+      data: user,
     });
   } catch (error) {
     sendErrorResponse(res, error);
   }
 };
 
-const updateTenant = async (req, res) => {
+const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const tenant = await tenantService.updateTenant(id, req.body);
+    await userService.deleteUser(id);
 
     res.status(200).json({
       success: true,
-      message: 'Орендаря успішно оновлено',
-      data: tenant,
-    });
-  } catch (error) {
-    sendErrorResponse(res, error);
-  }
-};
-
-const deleteTenant = async (req, res) => {
-  try {
-    const { id } = req.params;
-    await tenantService.deleteTenant(id);
-
-    res.status(200).json({
-      success: true,
-      message: 'Орендаря успішно видалено',
-    });
-  } catch (error) {
-    sendErrorResponse(res, error);
-  }
-};
-
-const assignLocationToTenant = async (req, res) => {
-  try {
-    const { tenantId, locationId } = req.params;
-    const location = await locationService.assignTenant(locationId, tenantId);
-
-    res.status(200).json({
-      success: true,
-      message: `Location ${locationId} assigned to Tenant ${tenantId}`,
-      data: location,
-    });
-  } catch (error) {
-    sendErrorResponse(res, error);
-  }
-};
-
-const unassignLocationFromTenant = async (req, res) => {
-  try {
-    const { locationId } = req.params;
-    const location = await locationService.unassignTenant(locationId);
-
-    res.status(200).json({
-      success: true,
-      message: `Location ${locationId} unassigned from tenant`,
-      data: location,
-    });
-  } catch (error) {
-    sendErrorResponse(res, error);
-  }
-};
-
-const getSimpleTenants = async (req, res) => {
-  try {
-    const tenants = await tenantService.getSimpleTenants();
-    res.status(200).json({
-      success: true,
-      data: tenants,
-      count: tenants.length,
+      message: 'User deleted permanently',
     });
   } catch (error) {
     sendErrorResponse(res, error);
@@ -152,13 +81,8 @@ const getSimpleTenants = async (req, res) => {
 };
 
 module.exports = {
-  getAllTenants,
-  getTenantById,
-  getTenantDependencies,
-  createTenant,
-  updateTenant,
-  deleteTenant,
-  assignLocationToTenant,
-  unassignLocationFromTenant,
-  getSimpleTenants,
+  getAllUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
 };

@@ -61,7 +61,7 @@ const { checkJwt, checkRole } = require('../middlewares/authMiddleware');
 router.get(
   '/',
   checkJwt,
-  getUsersQueryValidation,
+  ...getUsersQueryValidation,
   handleValidationErrors,
   userController.getAllUsers
 );
@@ -86,7 +86,7 @@ router.get(
 router.get(
   '/:id',
   checkJwt,
-  getUserByIdValidation,
+  ...getUserByIdValidation,
   handleValidationErrors,
   userController.getUserById
 );
@@ -126,7 +126,7 @@ router.put(
   '/:id',
   checkJwt,
   checkRole('admin'),
-  updateUserValidation,
+  ...updateUserValidation,
   handleValidationErrors,
   userController.updateUser
 );
@@ -154,7 +154,7 @@ router.delete(
   '/:id',
   checkJwt,
   checkRole('admin'),
-  getUserByIdValidation,
+  ...getUserByIdValidation,
   handleValidationErrors,
   userController.deleteUser
 );

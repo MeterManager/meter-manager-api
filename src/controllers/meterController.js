@@ -1,4 +1,24 @@
+'use strict';
 const meterService = require('../services/meterService');
+
+const mapErrorToStatus = (errorMessage) => {
+  if (errorMessage.includes('not found')) return 404;
+  if (errorMessage.includes('already exists') || errorMessage.includes('overlap') || errorMessage.includes('assigned'))
+    return 409;
+  if (errorMessage.includes('Cannot delete active') || errorMessage.includes('inactive')) return 400;
+
+  return 500;
+};
+
+const sendErrorResponse = (res, error) => {
+  const statusCode = mapErrorToStatus(error.message);
+  const clientMessage = statusCode === 500 ? 'Internal server error' : error.message;
+
+  res.status(statusCode).json({
+    success: false,
+    message: clientMessage,
+  });
+};
 
 const getAllMeters = async (req, res) => {
   try {
@@ -10,17 +30,13 @@ const getAllMeters = async (req, res) => {
     };
 
     const meters = await meterService.getAllMeters(filters);
-    res.json({
+    res.status(200).json({
       success: true,
       data: meters,
       count: meters.length,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch meters',
-      error: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -28,16 +44,12 @@ const getMeterById = async (req, res) => {
   try {
     const { id } = req.params;
     const meter = await meterService.getMeterById(id);
-    res.json({
-      success: true,
-      data: meter,
-    });
+
+    if (!meter) throw new Error('Meter not found');
+
+    res.status(200).json({ success: true, data: meter });
   } catch (error) {
-    const statusCode = error.message === 'Meter not found' ? 404 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -46,20 +58,14 @@ const getMeterDependencies = async (req, res) => {
     const { id } = req.params;
     const dependencies = await meterService.getMeterDependencies(id);
 
-    res.json({
-      success: true,
-      data: dependencies,
-      message:
-        dependencies.active_meter_tenants > 0 || dependencies.deliveries > 0
-          ? `This meter has ${dependencies.active_meter_tenants} active meter tenants and ${dependencies.deliveries} deliveries that will be affected`
-          : 'No active dependent objects',
-    });
+    const message =
+      dependencies.active_meter_tenants > 0 || dependencies.deliveries > 0
+        ? `This meter has ${dependencies.active_meter_tenants} active meter tenants and ${dependencies.deliveries} deliveries that will be affected`
+        : 'No active dependent objects';
+
+    res.status(200).json({ success: true, data: dependencies, message });
   } catch (error) {
-    const statusCode = error.message === 'Meter not found' ? 404 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -72,11 +78,7 @@ const createMeter = async (req, res) => {
       data: meter,
     });
   } catch (error) {
-    const statusCode = error.message.includes('already exists') ? 409 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -95,17 +97,9 @@ const updateMeter = async (req, res) => {
       }
     }
 
-    res.json({
-      success: true,
-      message: message,
-      data: meter,
-    });
+    res.status(200).json({ success: true, message: message, data: meter });
   } catch (error) {
-    const statusCode = error.message === 'Meter not found' ? 404 : error.message.includes('already exists') ? 409 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -121,17 +115,9 @@ const deleteMeter = async (req, res) => {
     if (dependencies.deliveries > 0) deletedItems.push(`${dependencies.deliveries} deliveries`);
     if (deletedItems.length > 0) message += ` (also deleted: ${deletedItems.join(', ')})`;
 
-    res.json({
-      success: true,
-      message: message,
-    });
+    res.status(200).json({ success: true, message: message });
   } catch (error) {
-    const statusCode =
-      error.message === 'Meter not found' ? 404 : error.message === 'Cannot delete active meter' ? 400 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -144,17 +130,9 @@ const getAllMeterTenants = async (req, res) => {
     };
 
     const meterTenants = await meterService.getAllMeterTenants(filters);
-    res.json({
-      success: true,
-      data: meterTenants,
-      count: meterTenants.length,
-    });
+    res.status(200).json({ success: true, data: meterTenants, count: meterTenants.length });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch meter tenants',
-      error: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -167,16 +145,7 @@ const createMeterTenant = async (req, res) => {
       data: meterTenant,
     });
   } catch (error) {
-    const statusCode =
-      error.message.includes('already assigned') || error.message.includes('overlap')
-        ? 409
-        : error.message.includes('not found')
-        ? 404
-        : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -184,16 +153,9 @@ const deleteMeterTenant = async (req, res) => {
   try {
     const { id } = req.params;
     await meterService.deleteMeterTenant(id);
-    res.json({
-      success: true,
-      message: 'Meter tenant assignment deleted permanently',
-    });
+    res.status(200).json({ success: true, message: 'Meter tenant assignment deleted permanently' });
   } catch (error) {
-    const statusCode = error.message === 'Meter tenant assignment not found' ? 404 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -201,23 +163,13 @@ const updateMeterTenant = async (req, res) => {
   try {
     const { id } = req.params;
     const meterTenant = await meterService.updateMeterTenant(id, req.body);
-    res.json({
+    res.status(200).json({
       success: true,
       message: 'Meter tenant assignment updated successfully',
       data: meterTenant,
     });
   } catch (error) {
-    const statusCode = error.message.includes('not found')
-      ? 404
-      : error.message.includes('inactive')
-      ? 400
-      : error.message.includes('overlap')
-      ? 409
-      : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 

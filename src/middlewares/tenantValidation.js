@@ -1,46 +1,68 @@
 const { body, param, query, validationResult } = require('express-validator');
+const validatePositiveInt = (field, location = body, isOptional = false) => {
+  let chain = location(field);
+  if (isOptional) chain = chain.optional();
+  return chain.isInt({ min: 1 }).withMessage(`${field} must be a positive integer.`);
+};
 
-const createTenantValidation = [
-  body('name')
-    .trim()
-    .notEmpty()
-    .withMessage('Name is required')
-    .isLength({ min: 2, max: 255 })
-    .withMessage('Name must be between 2 and 255 characters'),
-  body('location_id').isInt({ min: 1 }).withMessage('Location ID must be a positive integer'),
-  body('occupied_area').optional().isFloat({ min: 0 }).withMessage('Occupied area must be a positive number'),
-  body('contact_person')
+const validateName = (isOptional = false) => {
+  let chain = body('name').trim();
+
+  if (!isOptional) {
+    chain = chain.notEmpty().withMessage('Name is required');
+  } else {
+    chain = chain.optional().notEmpty().withMessage('Name cannot be empty');
+  }
+
+  return chain.isLength({ min: 2, max: 255 }).withMessage('Name must be between 2 and 255 characters.');
+};
+
+const validateLocationIds = () =>
+  body('location_ids')
+    .optional()
+    .isArray()
+    .withMessage('location_ids must be an array')
+    .bail()
+    .custom((arr) => arr.every((id) => Number.isInteger(id) && id > 0))
+    .withMessage('All location_ids must be positive integers.');
+
+const validateOccupiedArea = () =>
+  body('occupied_area').optional().isFloat({ min: 0 }).withMessage('Occupied area must be a non-negative number.');
+
+const validateContactInfo = (field, maxLength) =>
+  body(field)
     .optional()
     .trim()
-    .isLength({ max: 255 })
-    .withMessage('Contact person must not exceed 255 characters'),
-  body('phone').optional().trim().isLength({ max: 50 }).withMessage('Phone must not exceed 50 characters'),
-  body('email').optional().isEmail().withMessage('Invalid email format'),
-  body('is_active').optional().isBoolean().withMessage('is_active must be a boolean value'),
+    .isLength({ max: maxLength })
+    .withMessage(`${field} must not exceed ${maxLength} characters.`);
+
+const validateEmail = () => body('email').optional().isEmail().withMessage('Email must be valid.');
+
+const validateIsActive = () =>
+  body('is_active').optional().isBoolean().withMessage('is_active must be a boolean value.');
+
+const createTenantValidation = [
+  validateName(false),
+  validateLocationIds(),
+  validateOccupiedArea(),
+  validateContactInfo('contact_person', 255),
+  validateContactInfo('phone', 50),
+  validateEmail(),
+  validateIsActive(),
 ];
 
 const updateTenantValidation = [
-  param('id').isInt({ min: 1 }).withMessage('Tenant ID must be a positive integer'),
-  body('name')
-    .optional()
-    .trim()
-    .notEmpty()
-    .withMessage('Name cannot be empty')
-    .isLength({ min: 2, max: 255 })
-    .withMessage('Name must be between 2 and 255 characters'),
-  body('location_id').optional().isInt({ min: 1 }).withMessage('Location ID must be a positive integer'),
-  body('occupied_area').optional().isFloat({ min: 0 }).withMessage('Occupied area must be a positive number'),
-  body('contact_person')
-    .optional()
-    .trim()
-    .isLength({ max: 255 })
-    .withMessage('Contact person must not exceed 255 characters'),
-  body('phone').optional().trim().isLength({ max: 50 }).withMessage('Phone must not exceed 50 characters'),
-  body('email').optional().isEmail().withMessage('Invalid email format'),
-  body('is_active').optional().isBoolean().withMessage('is_active must be a boolean value'),
+  validatePositiveInt('id', param, false),
+  validateName(true),
+  validateLocationIds(),
+  validateOccupiedArea(),
+  validateContactInfo('contact_person', 255),
+  validateContactInfo('phone', 50),
+  validateEmail(),
+  validateIsActive(),
 ];
 
-const getTenantByIdValidation = [param('id').isInt({ min: 1 }).withMessage('Tenant ID must be a positive integer')];
+const getTenantByIdValidation = [validatePositiveInt('id', param, false)];
 
 const getTenantsQueryValidation = [
   query('is_active').optional().isBoolean().withMessage('is_active must be a boolean value'),
@@ -49,7 +71,7 @@ const getTenantsQueryValidation = [
     .trim()
     .isLength({ min: 1, max: 255 })
     .withMessage('Name filter must be between 1 and 255 characters'),
-  query('location_id').optional().isInt({ min: 1 }).withMessage('Location ID must be a positive integer'),
+  validatePositiveInt('location_id', query, true),
 ];
 
 const handleValidationErrors = (req, res, next) => {

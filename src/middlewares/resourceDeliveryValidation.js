@@ -1,75 +1,75 @@
 const { body, param, query, validationResult } = require('express-validator');
 
+/**
+ * Валідація позитивного цілого числа (ID)
+ * @param {string} field
+ * @param {function} location
+ * @param {boolean} isOptional
+ * @param {boolean} isRequired
+ */
+const validatePositiveInt = (field, location = body, isOptional = false, isRequired = false) => {
+  let chain = location(field);
+
+  if (isRequired) chain = chain.notEmpty().withMessage(`${field} is required`);
+  if (isOptional) chain = chain.optional();
+
+  return chain.isInt({ min: 1 }).withMessage(`${field} must be a positive integer.`);
+};
+
+const validateDate = (field, location = body, isOptional = false, isRequired = false) => {
+  let chain = location(field);
+
+  if (isRequired) chain = chain.notEmpty().withMessage(`${field} is required`);
+  if (isOptional) chain = chain.optional();
+
+  return chain.isISO8601().withMessage(`${field} must be a valid date.`);
+};
+
+const validateNonNegativeFloat = (field, location = body, isOptional = false, isRequired = false) => {
+  let chain = location(field);
+
+  if (isRequired) chain = chain.notEmpty().withMessage(`${field} is required`);
+  if (isOptional) chain = chain.optional();
+
+  return chain.isFloat({ min: 0 }).withMessage(`${field} must be a non-negative number.`);
+};
+
 const createResourceDeliveryValidation = [
-  body('location_id')
-    .notEmpty()
-    .withMessage('location_id is required')
-    .isInt({ min: 1 })
-    .withMessage('location_id must be a positive integer'),
-
-  body('energy_resource_type_id')
-    .notEmpty()
-    .withMessage('energy_resource_type_id is required')
-    .isInt({ min: 1 })
-    .withMessage('energy_resource_type_id must be a positive integer'),
-
-  body('delivery_date')
-    .notEmpty()
-    .withMessage('delivery_date is required')
-    .isISO8601()
-    .withMessage('delivery_date must be a valid date'),
-
-  body('quantity')
-    .notEmpty()
-    .withMessage('quantity is required')
-    .isFloat({ min: 0 })
-    .withMessage('quantity must be a positive number'),
+  validatePositiveInt('location_id', body, false, true),
+  validatePositiveInt('energy_resource_type_id', body, false, true),
+  validateDate('delivery_date', body, false, true),
+  validateNonNegativeFloat('quantity', body, false, true),
 
   body('unit').notEmpty().withMessage('unit is required').isString().withMessage('unit must be a string'),
 
-  body('price_per_unit').optional().isFloat({ min: 0 }).withMessage('price_per_unit must be a positive number'),
-
-  body('total_cost').optional().isFloat({ min: 0 }).withMessage('total_cost must be a positive number'),
+  validateNonNegativeFloat('price_per_unit', body, true, false),
+  validateNonNegativeFloat('total_cost', body, true, false),
 
   body('supplier').optional().isString().withMessage('supplier must be a string'),
 ];
 
 const updateResourceDeliveryValidation = [
-  param('id').isInt({ min: 1 }).withMessage('Delivery ID must be a positive integer'),
+  validatePositiveInt('id', param),
 
-  body('location_id').optional().isInt({ min: 1 }).withMessage('location_id must be a positive integer'),
-
-  body('energy_resource_type_id')
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage('energy_resource_type_id must be a positive integer'),
-
-  body('delivery_date').optional().isISO8601().withMessage('delivery_date must be a valid date'),
-
-  body('quantity').optional().isFloat({ min: 0 }).withMessage('quantity must be a positive number'),
+  validatePositiveInt('location_id', body, true, false),
+  validatePositiveInt('energy_resource_type_id', body, true, false),
+  validateDate('delivery_date', body, true, false),
+  validateNonNegativeFloat('quantity', body, true, false),
 
   body('unit').optional().isString().withMessage('unit must be a string'),
 
-  body('price_per_unit').optional().isFloat({ min: 0 }).withMessage('price_per_unit must be a positive number'),
-
-  body('total_cost').optional().isFloat({ min: 0 }).withMessage('total_cost must be a positive number'),
+  validateNonNegativeFloat('price_per_unit', body, true, false),
+  validateNonNegativeFloat('total_cost', body, true, false),
 
   body('supplier').optional().isString().withMessage('supplier must be a string'),
 ];
 
-const getDeleteResourceDeliveryByIdValidation = [
-  param('id').isInt({ min: 1 }).withMessage('Delivery ID must be a positive integer'),
-];
+const getDeleteResourceDeliveryByIdValidation = [validatePositiveInt('id', param)];
 
 const getResourceDeliveriesQueryValidation = [
-  query('location_id').optional().isInt({ min: 1 }).withMessage('location_id must be a positive integer'),
-
-  query('energy_resource_type_id')
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage('energy_resource_type_id must be a positive integer'),
-
-  query('delivery_date').optional().isISO8601().withMessage('delivery_date must be a valid date'),
+  validatePositiveInt('location_id', query, true, false),
+  validatePositiveInt('energy_resource_type_id', query, true, false),
+  validateDate('delivery_date', query, true, false),
 ];
 
 const handleValidationErrors = (req, res, next) => {

@@ -1,19 +1,38 @@
+'use strict';
 const resourceDeliveryService = require('../services/resourceDeliveryService');
+
+const mapErrorToStatus = (errorMessage) => {
+  if (errorMessage.includes('not found')) return 404;
+  if (errorMessage.includes('Invalid') || errorMessage.includes('required') || errorMessage.includes('format'))
+    return 400;
+  return 500;
+};
+
+const sendErrorResponse = (res, error, defaultStatusCode = 500) => {
+  const statusCode = mapErrorToStatus(error.message);
+
+  const clientMessage = statusCode === 500 ? 'Internal server error' : error.message;
+
+  res.status(statusCode).json({
+    success: false,
+    message: clientMessage,
+  });
+};
 
 const getAllResourceDeliveries = async (req, res) => {
   try {
     const deliveries = await resourceDeliveryService.getAllDeliveries(req.query);
-    res.json({
+
+    const data = deliveries.data || deliveries;
+    const count = deliveries.count !== undefined ? deliveries.count : Array.isArray(data) ? data.length : 0;
+
+    res.status(200).json({
       success: true,
-      data: deliveries.data,
-      count: deliveries.count,
+      data: data,
+      count: count,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch deliveries',
-      error: error.message,
-    });
+    sendErrorResponse(res, error, 500);
   }
 };
 
@@ -22,20 +41,13 @@ const getResourceDeliveryById = async (req, res) => {
     const { id } = req.params;
     const delivery = await resourceDeliveryService.getDeliveryById(id);
 
-    !delivery
-      ? res.status(404).json({
-          success: false,
-          message: 'Delivery not found',
-        })
-      : res.json({
-          success: true,
-          data: delivery,
-        });
+    if (!delivery) {
+      throw new Error('Delivery not found');
+    }
+
+    res.status(200).json({ success: true, data: delivery });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error, 500);
   }
 };
 
@@ -49,10 +61,7 @@ const createResourceDelivery = async (req, res) => {
       data: delivery,
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error, 400);
   }
 };
 
@@ -61,21 +70,13 @@ const updateResourceDelivery = async (req, res) => {
     const { id } = req.params;
     const delivery = await resourceDeliveryService.updateResourceDelivery(id, req.body);
 
-    res.json({
+    res.status(200).json({
       success: true,
       message: 'Delivery updated successfully',
       data: delivery,
     });
   } catch (error) {
-    if (error.message.includes('Delivery not found'))
-      return res.status(404).json({
-        success: false,
-        message: error.message,
-      });
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error, 400);
   }
 };
 
@@ -84,20 +85,12 @@ const deleteResourceDelivery = async (req, res) => {
     const { id } = req.params;
     await resourceDeliveryService.deleteResourceDelivery(id);
 
-    res.json({
+    res.status(200).json({
       success: true,
       message: 'Delivery deleted successfully',
     });
   } catch (error) {
-    if (error.message.includes('Delivery not found'))
-      return res.status(404).json({
-        success: false,
-        message: error.message,
-      });
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error, 400);
   }
 };
 

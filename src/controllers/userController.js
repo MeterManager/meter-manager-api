@@ -1,4 +1,22 @@
+'use strict';
 const userService = require('../services/userService');
+
+const mapErrorToStatus = (errorMessage) => {
+  if (errorMessage.includes('not found')) return 404;
+  if (errorMessage.includes('unique constraint') || errorMessage.includes('already exists')) return 409;
+  if (errorMessage.includes('Invalid') || errorMessage.includes('Validation')) return 400;
+  return 500;
+};
+
+const sendErrorResponse = (res, error) => {
+  const statusCode = mapErrorToStatus(error.message);
+  const clientMessage = statusCode === 500 ? 'Internal server error' : error.message;
+
+  res.status(statusCode).json({
+    success: false,
+    message: clientMessage,
+  });
+};
 
 const getAllUsers = async (req, res) => {
   try {
@@ -10,17 +28,13 @@ const getAllUsers = async (req, res) => {
 
     const users = await userService.getAllUsers(filters);
 
-    res.json({
+    res.status(200).json({
       success: true,
       data: users,
       count: users.length,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch users',
-      error: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -29,16 +43,11 @@ const getUserById = async (req, res) => {
     const { id } = req.params;
     const user = await userService.getUserById(id);
 
-    res.json({
-      success: true,
-      data: user,
-    });
+    if (!user) throw new Error('User not found');
+
+    res.status(200).json({ success: true, data: user });
   } catch (error) {
-    const statusCode = error.message === 'User not found' ? 404 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -47,21 +56,13 @@ const updateUser = async (req, res) => {
     const { id } = req.params;
     const user = await userService.updateUser(id, req.body);
 
-    res.json({
+    res.status(200).json({
       success: true,
       message: 'User updated successfully',
       data: user,
     });
   } catch (error) {
-    let statusCode = 500;
-    if (error.message === 'User not found') {
-      statusCode = 404;
-    }
-
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -70,17 +71,12 @@ const deleteUser = async (req, res) => {
     const { id } = req.params;
     await userService.deleteUser(id);
 
-    res.json({
+    res.status(200).json({
       success: true,
       message: 'User deleted permanently',
     });
   } catch (error) {
-    const statusCode = error.message === 'User not found' ? 404 : 500;
-
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 

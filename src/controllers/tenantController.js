@@ -1,4 +1,22 @@
+'use strict';
 const tenantService = require('../services/tenantService');
+
+const mapErrorToStatus = (errorMessage) => {
+  if (errorMessage.includes('not found')) return 404;
+  if (errorMessage.includes('already exists') || errorMessage.includes('assigned')) return 409;
+  if (errorMessage.includes('Cannot delete active') || errorMessage.includes('Invalid')) return 400;
+  return 500;
+};
+
+const sendErrorResponse = (res, error) => {
+  const statusCode = mapErrorToStatus(error.message);
+  const clientMessage = statusCode === 500 ? 'Internal server error' : error.message;
+
+  res.status(statusCode).json({
+    success: false,
+    message: clientMessage,
+  });
+};
 
 const getAllTenants = async (req, res) => {
   try {
@@ -9,17 +27,13 @@ const getAllTenants = async (req, res) => {
     };
 
     const tenants = await tenantService.getAllTenants(filters);
-    res.json({
+    res.status(200).json({
       success: true,
       data: tenants,
       count: tenants.length,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch tenants',
-      error: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -27,16 +41,11 @@ const getTenantById = async (req, res) => {
   try {
     const { id } = req.params;
     const tenant = await tenantService.getTenantById(id);
-    res.json({
-      success: true,
-      data: tenant,
-    });
+    if (!tenant) throw new Error('Tenant not found');
+
+    res.status(200).json({ success: true, data: tenant });
   } catch (error) {
-    const statusCode = error.message === 'Tenant not found' ? 404 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -45,20 +54,14 @@ const getTenantDependencies = async (req, res) => {
     const { id } = req.params;
     const dependencies = await tenantService.getTenantDependencies(id);
 
-    res.json({
-      success: true,
-      data: dependencies,
-      message:
-        dependencies.active_meter_tenants > 0
-          ? `This tenant has ${dependencies.active_meter_tenants} active meter assignments that will be affected`
-          : 'No active dependent objects',
-    });
+    const message =
+      dependencies.active_meter_tenants > 0
+        ? `Цей орендар має ${dependencies.active_meter_tenants} активних лічильників.`
+        : 'Немає активних залежностей';
+
+    res.status(200).json({ success: true, data: dependencies, message });
   } catch (error) {
-    const statusCode = error.message === 'Tenant not found' ? 404 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -67,15 +70,11 @@ const createTenant = async (req, res) => {
     const tenant = await tenantService.createTenant(req.body);
     res.status(201).json({
       success: true,
-      message: 'Tenant created successfully',
+      message: 'Орендаря успішно створено',
       data: tenant,
     });
   } catch (error) {
-    const statusCode = error.message.includes('already exists') ? 409 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
@@ -84,53 +83,40 @@ const updateTenant = async (req, res) => {
     const { id } = req.params;
     const tenant = await tenantService.updateTenant(id, req.body);
 
-    let message = 'Tenant updated successfully';
-    if (req.body.is_active === false) {
-      const dependencies = await tenantService.getTenantDependencies(id);
-      if (dependencies.active_meter_tenants === 0) {
-        message += ' (no dependent objects affected)';
-      } else {
-        message += ` (deactivated ${dependencies.active_meter_tenants} meter tenants)`;
-      }
-    }
-
-    res.json({
+    res.status(200).json({
       success: true,
-      message: message,
+      message: 'Орендаря успішно оновлено',
       data: tenant,
     });
   } catch (error) {
-    const statusCode =
-      error.message === 'Tenant not found' ? 404 : error.message.includes('already exists') ? 409 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
-    });
+    sendErrorResponse(res, error);
   }
 };
 
 const deleteTenant = async (req, res) => {
   try {
     const { id } = req.params;
-    const dependencies = await tenantService.getTenantDependencies(id);
     await tenantService.deleteTenant(id);
 
-    let message = 'Tenant deleted permanently';
-    if (dependencies.active_meter_tenants > 0) {
-      message += ` (also deleted: ${dependencies.active_meter_tenants} meter tenants)`;
-    }
-
-    res.json({
+    res.status(200).json({
       success: true,
-      message: message,
+      message: 'Орендаря успішно видалено',
     });
   } catch (error) {
-    const statusCode =
-      error.message === 'Tenant not found' ? 404 : error.message === 'Cannot delete active tenant' ? 400 : 500;
-    res.status(statusCode).json({
-      success: false,
-      message: error.message,
+    sendErrorResponse(res, error);
+  }
+};
+
+const getSimpleTenants = async (req, res) => {
+  try {
+    const tenants = await tenantService.getSimpleTenants();
+    res.status(200).json({
+      success: true,
+      data: tenants,
+      count: tenants.length,
     });
+  } catch (error) {
+    sendErrorResponse(res, error);
   }
 };
 
@@ -141,4 +127,5 @@ module.exports = {
   createTenant,
   updateTenant,
   deleteTenant,
+  getSimpleTenants,
 };

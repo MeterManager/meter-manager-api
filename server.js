@@ -1,7 +1,15 @@
 const path = require('path');
-require('dotenv').config({
-  path: path.resolve(__dirname, `.env.${process.env.NODE_ENV || 'development'}`)
-});
+const fs = require('fs');
+
+const defaultEnvPath = path.resolve(__dirname, '.env');
+const envFile = `.env.${process.env.NODE_ENV || 'development'}`;
+const envPath = path.resolve(__dirname, envFile);
+
+if (fs.existsSync(defaultEnvPath)) {
+  require('dotenv').config({ path: defaultEnvPath });
+} else if (fs.existsSync(envPath)) {
+  require('dotenv').config({ path: envPath });
+}
 
 const express = require('express');
 const swaggerUi = require('swagger-ui-express');
